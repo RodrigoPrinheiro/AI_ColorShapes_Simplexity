@@ -8,7 +8,7 @@ namespace BeeAI
     public static class BeeHeuristics
     {
         // Heuristic function
-        private float Heuristic(Board board, PColor color)
+        public static float Heuristic(Board board, PColor color)
         {
             // Distance between two points
             float Dist(float x1, float y1, float x2, float y2)
