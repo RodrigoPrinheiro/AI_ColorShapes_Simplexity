@@ -1,12 +1,12 @@
 ﻿using System;
 
-namespace AI_Hal300
+namespace BeeAI
 {
     class Program
     {
         static void Main(string[] args)
         {
-
+            Console.WriteLine("Hello World!");
         }
     }
 }
