@@ -10,6 +10,8 @@ namespace BeeAI
         // Heuristic function
         public static float Heuristic(Board board, PColor color)
         {
+            float beesTotal, enemyTotal = 0;
+            
             // Distance between two points
             float Dist(float x1, float y1, float x2, float y2)
             {
