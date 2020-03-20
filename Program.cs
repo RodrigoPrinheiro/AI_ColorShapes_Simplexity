@@ -6,7 +6,7 @@ namespace BeeAI
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            
         }
     }
 }
