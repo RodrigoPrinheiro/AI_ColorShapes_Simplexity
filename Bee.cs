@@ -7,8 +7,16 @@ namespace BeeAI
 {
     public class Bee : AbstractThinker
     {
+        private int maxDepth;
+        private int turns;
+        public override void Setup(string str)
+        {
+            turns = 0;
+        }
+
         public override FutureMove Think(Board board, CancellationToken ct)
         {
+            turns += 2;
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
                 ABNegamax(board, ct, board.Turn, board.Turn, 0, float.NegativeInfinity, float.PositiveInfinity);
@@ -57,7 +65,7 @@ namespace BeeAI
             // the heuristic
             else if (depth == maxDepth)
             {
-                selectedMove = (FutureMove.NoMove, BeeHeuristics.Heuristic(board, player));
+                selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns, areaOfDiagonal));
             }
             else // Board not final and depth not at max...
             {

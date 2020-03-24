@@ -1,5 +1,6 @@
 ﻿using System;
 using ColorShapeLinks.Common;
+using System.Linq;
 
 namespace BeeAI
 {
@@ -30,7 +31,7 @@ namespace BeeAI
             }
             
             Console.WriteLine(i);
-            Console.WriteLine(BeeHeuristics.Heuristic(board, PColor.White, 2));
+            Console.WriteLine(board.winCorridors.Count());
         }
     }
 }
