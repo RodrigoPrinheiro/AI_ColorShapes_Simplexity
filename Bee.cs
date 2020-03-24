@@ -7,10 +7,8 @@ namespace BeeAI
 {
     public class Bee : AbstractThinker
     {
-        // Maximum depth
         private int maxDepth;
-
-        // The Setup() method, optional override
+        private int turns;
         public override void Setup(string str)
         {
             base.Setup(str);
@@ -20,18 +18,12 @@ namespace BeeAI
                 // If not possible, set it to 3 by default
                 maxDepth = 3;
             }
+            turns = 0;
         }
 
-        // The ToString() method, optional override
-        public override string ToString()
-        {
-            return base.ToString() + "D" + maxDepth;
-        }
-
-        // The Think() method (mandatory override) is invoked by the game engine
         public override FutureMove Think(Board board, CancellationToken ct)
         {
-
+            turns += 2;
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
                 ABNegamax(board, ct, board.Turn, board.Turn, 0, float.NegativeInfinity, float.PositiveInfinity);
@@ -80,9 +72,7 @@ namespace BeeAI
             // the heuristic
             else if (depth == maxDepth)
             {
-                // This is the final expression
-                //selectedMove = (FutureMove.NoMove, BeeHeuristics.Heuristic(board, player));                
-                selectedMove = (FutureMove.NoMove, DebugHoneycomb(board, player));
+                selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns, 0));
             }
             else // Board not final and depth not at max...
             {
