@@ -62,22 +62,11 @@ namespace BeeAI
             else // Board not final and depth not at max...
             {
                 //...so let's test all possible moves and recursively call Minimax()
-                // for each one of them, maximizing or minimizing depending on who's
-                // turn it is
-
-                (FutureMove move, float score) bestMove = 
-                    (FutureMove.NoMove, float.NegativeInfinity);
+                // for each one of them
 
                 // Initialize the selected move...
-                selectedMove = turn == player
-                    // ...with negative infinity if it's the AI's turn and we're
-                    // maximizing (so anything except defeat will be better than this)
-                    ?
-                    (FutureMove.NoMove, float.NegativeInfinity)
-                    // ...or with positive infinity if it's the opponent's turn and we're
-                    // minimizing (so anything except victory will be worse than this)
-                    :
-                    (FutureMove.NoMove, float.PositiveInfinity);
+                selectedMove = (FutureMove.NoMove, float.NegativeInfinity);
+                (FutureMove move, float score) bestMove = selectedMove;
 
                 // Test each column
                 for (int i = 0; i < Cols; i++)
@@ -119,6 +108,7 @@ namespace BeeAI
                                 // If so, make alpha-beta cut and return the
                                 // best move so far
                                 selectedMove = bestMove;
+                                return selectedMove;
                             }
                         }
 
