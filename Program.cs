@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Threading;
 using ColorShapeLinks.Common;
+using ColorShapeLinks.Common.AI;
 
 namespace BeeAI
 {
@@ -13,6 +15,7 @@ namespace BeeAI
         static void TestHeuristic()
         {
             Board board = new Board();
+            AbstractThinker bee = new Bee();
 
             board.DoMove(PShape.Round, 0);
             board.DoMove(PShape.Square, 1);
@@ -22,18 +25,11 @@ namespace BeeAI
             board.DoMove(PShape.Round, 6);
             board.DoMove(PShape.Round, 6);
             board.DoMove(PShape.Round, 6);
+            
+            bee.Setup("");
+            bee.Think(board, CancellationToken.None);
 
-            foreach( var v in board.winCorridors)
-            {
-                Console.WriteLine();
-                foreach(var t in v)
-                {
-                    Console.Write($"{t}, ");
-                    Console.WriteLine();
-                }
-            }
-
-            Console.WriteLine(BeeHeuristics.Heuristic(board, PColor.White));
+            //Console.WriteLine(BeeHeuristics.Heuristic(board, PColor.White));
         }
     }
 }
