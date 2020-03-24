@@ -33,16 +33,16 @@ namespace BeeAI
 
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
-                Minimax(board, ct, board.Turn, board.Turn, 0);
+                ABNegamax(board, ct, board.Turn, board.Turn, 0, float.NegativeInfinity, float.PositiveInfinity);
 
             // Return best move
             return decision.move;
         }
 
         // Minimax implementation
-        private(FutureMove move, float score) Minimax(
+        private(FutureMove move, float score) ABNegamax(
             Board board, CancellationToken ct,
-            PColor player, PColor turn, int depth)
+            PColor player, PColor turn, int depth, float alpha, float beta)
         {
             // Move to return and its heuristic value
             (FutureMove move, float score) selectedMove;
@@ -87,6 +87,9 @@ namespace BeeAI
                 // for each one of them, maximizing or minimizing depending on who's
                 // turn it is
 
+                (FutureMove move, float score) bestMove = 
+                    (FutureMove.NoMove, float.NegativeInfinity);
+
                 // Initialize the selected move...
                 selectedMove = turn == player
                     // ...with negative infinity if it's the AI's turn and we're
@@ -116,25 +119,46 @@ namespace BeeAI
                         // Skip unavailable shapes
                         if (board.PieceCount(turn, shape) == 0) continue;
 
-                        // Test move, call minimax and undo move
+                        // Test move
                         board.DoMove(shape, i);
-                        eval = Minimax(board, ct, player, turn.Other(), depth + 1).score;
+                        // Call minimax
+                        eval = ABNegamax(board, ct, player, turn.Other(), depth + 1, -beta, -alpha).score;
+                        // Undo move
                         board.UndoMove();
 
-                        // If we're maximizing, is this the best move so far?
-                        if (turn == player &&
-                            eval >= selectedMove.score)
+                        // Is this the best move so far?
+                        if (eval > bestMove.score)
                         {
-                            // If so, keep it
-                            selectedMove = (new FutureMove(i, shape), eval);
+                            // If so, update alpha
+                            alpha = eval;
+
+                            // Keep the best move
+                            bestMove = (new FutureMove(i, shape), eval);
+
+                            // Is alpha higher than beta?
+                            if (alpha >= beta)
+                            {
+                                // If so, make alpha-beta cut and return the
+                                // best move so far
+                                selectedMove = bestMove;
+                            }
                         }
-                        // Otherwise, if we're minimizing, is this the worst move so far?
-                        else if (turn == player.Other() &&
-                            eval <= selectedMove.score)
-                        {
-                            // If so, keep it
-                            selectedMove = (new FutureMove(i, shape), eval);
-                        }
+
+                        //! Original code
+                        // // If we're maximizing, is this the best move so far?
+                        // if (turn == player &&
+                        //     eval >= selectedMove.score)
+                        // {
+                        //     // If so, keep it
+                        //     selectedMove = (new FutureMove(i, shape), eval);
+                        // }
+                        // // Otherwise, if we're minimizing, is this the worst move so far?
+                        // else if (turn == player.Other() &&
+                        //     eval <= selectedMove.score)
+                        // {
+                        //     // If so, keep it
+                        //     selectedMove = (new FutureMove(i, shape), eval);
+                        // }
                     }
                 }
             }
