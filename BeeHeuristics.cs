@@ -9,22 +9,25 @@ namespace BeeAI
 {
     public static class BeeHeuristics
     {
+        // Amount per
+        const int AMOUNT_PER_PIECE = 2;
+        const int WIN_SET = 10;
+        const int WIN_SETUP_HONEY = 100;
+
         // Heuristic function
         /// <summary>
-        /// 
+        /// Heuristic for the Bee AI agent
         /// </summary>
-        /// <param name="board"></param>
-        /// <param name="color"></param>
-        /// <param name="placedPieces"></param>
-        /// <param name="diagonalA"></param>
-        /// <returns></returns>
-        public static float Honeycomb(Board board, PColor color, int placedPieces, int diagonalA)
+        /// <param name="board"> Current game Board</param>
+        /// <param name="color"> Color to do the heuristic for</param>
+        /// <param name="placedPieces"> Number of placed pieces from both players</param>
+        /// <returns> Heuristic value of the board</returns>
+        public static float Honeycomb(Board board, PColor color, int placedPieces)
         {
             // Max points the ai can hold
-            float maxPoints = 100;
             float h = 0;
             float s = 0;
-            float p = 0;
+            float side = 0;
 
             int winCorridorDepth;
             int areaOfDiagonal;
@@ -44,24 +47,61 @@ namespace BeeAI
             if (board.cols >= board.piecesInSequence)
                 winHVCount += board.rows;
             
-            p = board.piecesInSequence;
-            s = (p + p + p) / 2;
-            areaOfDiagonal = (int)MathF.Sqrt(s * (s - p) * (s - p) * (s - p));
+            side = board.piecesInSequence;
+            s = (side + side + side) / 2;
+
+            // Calculate de area of the diagonal, casting it to an integer already
+            // corrects to the number of pieces needed to complete a diagonal.
+            areaOfDiagonal = (int)MathF.Sqrt
+                (s * (s - side) * (s - side) * (s - side));
+            
             // Give it 2 turns of advance to search for possible diagonals
             areaOfDiagonal -= 2;
-            winCorridorDepth = placedPieces >= diagonalA ? wCor.Count() : winHVCount;
+            winCorridorDepth = placedPieces >= areaOfDiagonal ? wCor.Count() : winHVCount;
             
             int iteration = 0;
+            PShape shape = color == PColor.White ? PShape.Round : PShape.Square;
+
             foreach(IEnumerable<Pos> corridor in wCor)
             {
+                // Number of pieces found in this corridor
+                int corridorCount = 0;
+                // Treat each win corridor
+                foreach(Pos p in corridor)
+                {
+                    Piece? piece = board[p.row, p.col];
+                    if (piece.HasValue)
+                    {
+                        if (piece.Value.Is(color, color.Shape()))
+                        {
+                            h += AMOUNT_PER_PIECE;
+                            corridorCount++;
+                        }
+                        else if (piece.Value.Is(color.Other(), color.Shape()))
+                        {
+                            h += AMOUNT_PER_PIECE / 2;
+                            corridorCount++;
+                        }
+                        else
+                        {
+                            h -= AMOUNT_PER_PIECE;
+                            corridorCount = 0;
+                        }
+                    }
+                    else if (corridorCount > board.piecesInSequence - 1)
+                    {
+                        h += WIN_SET;
+                    }
+                    else
+                    {
+                        corridorCount = 0;
+                    }
+                }
+                
+                // Increment iteration, if it's higher than the heuristic search
+                // depth then brake and return the current board value
                 iteration++;
                 if (iteration > winCorridorDepth) break;
-
-                // treat each win corridor
-                foreach(Pos position in corridor)
-                {
-                    if (board.)
-                }
             }
 
             return h;

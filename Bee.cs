@@ -65,7 +65,7 @@ namespace BeeAI
             // the heuristic
             else if (depth == maxDepth)
             {
-                selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns, areaOfDiagonal));
+                selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
             }
             else // Board not final and depth not at max...
             {
