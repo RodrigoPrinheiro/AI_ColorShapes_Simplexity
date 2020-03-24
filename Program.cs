@@ -23,17 +23,14 @@ namespace BeeAI
             board.DoMove(PShape.Round, 6);
             board.DoMove(PShape.Round, 6);
 
+            int i = 0;
             foreach( var v in board.winCorridors)
             {
-                Console.WriteLine();
-                foreach(var t in v)
-                {
-                    Console.Write($"{t}, ");
-                    Console.WriteLine();
-                }
+                i++;
             }
-
-            Console.WriteLine(BeeHeuristics.Heuristic(board, PColor.White));
+            
+            Console.WriteLine(i);
+            Console.WriteLine(BeeHeuristics.Heuristic(board, PColor.White, 2));
         }
     }
 }
