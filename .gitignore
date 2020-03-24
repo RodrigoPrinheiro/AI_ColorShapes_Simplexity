@@ -433,4 +433,5 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Ignore testing program cs
 Program.cs

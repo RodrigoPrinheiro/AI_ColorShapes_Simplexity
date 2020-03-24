@@ -103,7 +103,6 @@ namespace BeeAI
                 iteration++;
                 if (iteration > winCorridorDepth) break;
             }
-
             return h;
         }
     }
