@@ -10,11 +10,10 @@ namespace BeeAI
     public static class BeeHeuristics
     {
         // Amount per
-        const int AMOUNT_PIECE = 3;
-        const int AMOUNT_COLOR = 1;
-        const int AMOUNT_SHAPE = 2;
-        const int WIN_SET = 10;
-        const int WIN_SETUP_HONEY = 100;
+        const float AMOUNT_PIECE = 3;
+        const float AMOUNT_COLOR = 1;
+        const float AMOUNT_SHAPE = 4;
+        const float LOST = 1000;
 
         // Heuristic function
         /// <summary>
@@ -29,6 +28,40 @@ namespace BeeAI
             // Max points the ai can hold
             float h = 0;
 
+            foreach(IEnumerable<Pos> line in board.winCorridors)
+            {
+                foreach(Pos pos in line)
+                {
+                    if (board[pos.row, pos.col].HasValue)
+                    {
+                        int count = 0;
+                        int enemy = 0;
+                        Piece p = board[pos.row, pos.col].Value;
+                        if (color.FriendOf(p))
+                        {
+                            h += ++count;
+                            enemy = 0;
+                        }
+                        else
+                        {
+                            count = 0;
+                            enemy++;
+                        }
+                        
+                        if (count == board.piecesInSequence)
+                        {
+                            h += LOST;
+                        }
+
+                        if (enemy == board.piecesInSequence - 1)
+                        {
+                            h -= LOST;
+                        }
+                        
+                    }
+                }
+            }
+
             for(int x = 0; x < board.cols; x++)
             {
                 for(int y = 0; y < board.rows; y++)
@@ -36,13 +69,12 @@ namespace BeeAI
                     if (!board[y, x].HasValue) continue;
 
                     Piece p = board[y, x].Value;
-                    if (p.color == color)
+                    if (p.color == color || p.shape == color.Shape())
                     {
                         h += NeighborsValue(x, y, color, board);
                     }
                 }
             }
-
             return h;
         }
 
@@ -64,24 +96,9 @@ namespace BeeAI
                     Piece p = board[i, j].Value;
 
                     // If the piece curresponds to the player
-                    if (p.color == color && p.shape == color.Shape())
+                    if (color.FriendOf(p))
                     {
                         pieceHeuristic += AMOUNT_PIECE;
-                    }
-                    else if (p.color != color && p.shape != color.Shape())
-                    {
-                        pieceHeuristic -= AMOUNT_PIECE;
-                    }
-                    // If the piece has only the same color
-                    else if (p.color == color && p.shape != color.Shape())
-                    {
-                        pieceHeuristic += AMOUNT_COLOR;
-                        pieceHeuristic -= AMOUNT_SHAPE;
-                    }
-                    else if (p.color != color && p.shape == color.Shape())
-                    {
-                        pieceHeuristic -= AMOUNT_COLOR;
-                        pieceHeuristic += AMOUNT_SHAPE;
                     }
                 }
             }

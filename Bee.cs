@@ -16,7 +16,7 @@ namespace BeeAI
             if (!int.TryParse(str, out maxDepth))
             {
                 // If not possible, set it to 3 by default
-                maxDepth = 4;
+                maxDepth = 2;
             }
             turns = 0;
         }
@@ -72,8 +72,8 @@ namespace BeeAI
             // the heuristic
             else if (depth == maxDepth)
             {
-                //selectedMove = (FutureMove.NoMove, DebugHoneycomb(board, turn));
-                bestMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
+                bestMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn, turns));
+                //bestMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn, turns));
             }
             else // Board not final and depth not at max...
             {
@@ -104,7 +104,8 @@ namespace BeeAI
                         // Test move
                         board.DoMove(shape, i);
                         // Call minimax
-                        eval = -ABNegamax(board, ct, player, turn.Other(), depth + 1, -beta, -alpha).score;
+                        eval = -ABNegamax(board, ct, player, turn.Other(),
+                                         depth + 1, -beta, -alpha).score;
                         // Undo move
                         board.UndoMove();
 

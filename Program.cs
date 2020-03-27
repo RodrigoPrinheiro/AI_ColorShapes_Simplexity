@@ -17,14 +17,16 @@ namespace BeeAI
         static void TestHeuristic()
         {
             Board board = new Board();
-            board.DoMove(PShape.Round, 0);
-            board.DoMove(PShape.Square, 1);
-            board.DoMove(PShape.Round, 2);
+            board.DoMove(PShape.Round, 5);
+            board.DoMove(PShape.Square, 3);
+            board.DoMove(PShape.Round, 5);
             board.DoMove(PShape.Square, 3);
 
-            board.DoMove(PShape.Round, 4);
-            board.DoMove(PShape.Round, 5);
             board.DoMove(PShape.Round, 6);
+            board.DoMove(PShape.Square, 5);
+            board.DoMove(PShape.Round, 4);
+            board.DoMove(PShape.Square, 4);
+            //board.DoMove(PShape.Square, 2);
             
             Console.WriteLine(BeeHeuristics.Honeycomb(board, PColor.White, 2));
             BoardUpdate(board);
