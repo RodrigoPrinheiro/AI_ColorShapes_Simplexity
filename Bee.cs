@@ -16,7 +16,7 @@ namespace BeeAI
             if (!int.TryParse(str, out maxDepth))
             {
                 // If not possible, set it to 3 by default
-                maxDepth = 2;
+                maxDepth = 4;
             }
             turns = 0;
         }
@@ -38,8 +38,7 @@ namespace BeeAI
             PColor player, PColor turn, int depth, float alpha, float beta)
         {
             // Move to return and its heuristic value
-            (FutureMove move, float score) selectedMove;
-            (FutureMove move, float score) bestMove = (FutureMove.NoMove, float.NegativeInfinity);
+            (FutureMove move, float score) bestMove;
 
             // Current board state
             Winner winner;
@@ -48,7 +47,7 @@ namespace BeeAI
             if (ct.IsCancellationRequested)
             {
                 // ...set a "no move" and skip the remaining part of the algorithm
-                selectedMove = (FutureMove.NoMove, float.NaN);
+                bestMove = (FutureMove.NoMove, float.NaN);
             }
             // Otherwise, if it's a final board, return the appropriate evaluation
             else if ((winner = board.CheckWinner()) != Winner.None)
@@ -56,17 +55,17 @@ namespace BeeAI
                 if (winner.ToPColor() == player)
                 {
                     // AI player wins, return highest possible score
-                    selectedMove = (FutureMove.NoMove, float.PositiveInfinity);
+                    bestMove = (FutureMove.NoMove, float.PositiveInfinity);
                 }
                 else if (winner.ToPColor() == player.Other())
                 {
                     // Opponent wins, return lowest possible score
-                    selectedMove = (FutureMove.NoMove, float.NegativeInfinity);
+                    bestMove = (FutureMove.NoMove, float.NegativeInfinity);
                 }
                 else
                 {
                     // A draw, return zero
-                    selectedMove = (FutureMove.NoMove, 0f);
+                    bestMove = (FutureMove.NoMove, 0f);
                 }
             }
             // If we're at maximum depth and don't have a final board, use
@@ -74,7 +73,7 @@ namespace BeeAI
             else if (depth == maxDepth)
             {
                 //selectedMove = (FutureMove.NoMove, DebugHoneycomb(board, turn));
-                selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
+                bestMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
             }
             else // Board not final and depth not at max...
             {
@@ -82,7 +81,7 @@ namespace BeeAI
                 // for each one of them
 
                 // Initialize the selected..
-                selectedMove = (FutureMove.NoMove, float.NegativeInfinity);
+                bestMove = (FutureMove.NoMove, float.NegativeInfinity);
 
                 // Go through all columns
                 for (int i = 0; i < board.cols; i++)
@@ -130,9 +129,9 @@ namespace BeeAI
                 }
             }
             // Return movement and its heuristic value
-            return selectedMove;
+            return bestMove;
         }
-        
+
         private float DebugHoneycomb(Board board, PColor color)
         {
             // Distance between two points
