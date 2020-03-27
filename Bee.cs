@@ -64,7 +64,7 @@ namespace BeeAI
             {
                 // ...set a "no move" and skip the remaining part of the algorithm
                 bestMove = lastCompletedDepthBestMove;
-                Console.WriteLine("stoop");
+                //Console.WriteLine("stoop");
             }
             // Otherwise, if it's a final board, return the appropriate evaluation
             else if ((winner = board.CheckWinner()) != Winner.None)
@@ -111,7 +111,7 @@ namespace BeeAI
                             // Use this variable to keep the current board's score
                             float eval;
                             // Store the move heuristic
-                            float thisNodeEval = BeeHeuristics.Honeycomb(board, player, turns);
+                            float thisNodeEval = DebugHoneycomb(board, player);
 
                             // Check if we should stop here
                             if (depth == maxDepth)

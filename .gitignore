@@ -435,3 +435,4 @@ $RECYCLE.BIN/
 
 # Ignore testing program cs
 Program.cs
+MinimaxAIThinker.cs

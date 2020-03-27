@@ -13,7 +13,7 @@ namespace BeeAI
         const float AMOUNT_PIECE = 3;
         const float AMOUNT_COLOR = 1;
         const float AMOUNT_SHAPE = 4;
-        const float LOST = 1000;
+        const float WIN = float.PositiveInfinity;
 
         // Heuristic function
         /// <summary>
@@ -23,56 +23,82 @@ namespace BeeAI
         /// <param name="color"> Color to do the heuristic for</param>
         /// <param name="placedPieces"> Number of placed pieces from both players</param>
         /// <returns> Heuristic value of the board</returns>
-        public static float Honeycomb(Board board, PColor color, int turns)
+        public static float Honeycomb(Board board, PColor color)
         {
             // Max points the ai can hold
             float h = 0;
 
-            foreach(IEnumerable<Pos> line in board.winCorridors)
+            float Dist(float x1, float y1, float x2, float y2)
             {
-                foreach(Pos pos in line)
-                {
-                    if (board[pos.row, pos.col].HasValue)
-                    {
-                        int count = 0;
-                        int enemy = 0;
-                        Piece p = board[pos.row, pos.col].Value;
-                        if (color.FriendOf(p))
-                        {
-                            h += ++count;
-                            enemy = 0;
-                        }
-                        else
-                        {
-                            count = 0;
-                            enemy++;
-                        }
-                        
-                        if (count == board.piecesInSequence)
-                        {
-                            h += LOST;
-                        }
+                return (float)Math.Sqrt(
+                    Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
+            }
 
-                        if (enemy == board.piecesInSequence - 1)
-                        {
-                            h -= LOST;
-                        }
-                        
+            // Determine the center row
+            float centerRow = board.rows / 2;
+            float centerCol = board.cols / 2;
+
+            // Maximum points a piece can be awarded when it's at the center
+            float maxPoints = Dist(centerRow, centerCol, 0, 0);
+
+            // Loop through the board looking for pieces
+            for (int i = 0; i < board.rows; i++)
+            {
+                for (int j = 0; j < board.cols; j++)
+                {
+                    if (!board[i, j].HasValue) continue;
+                    // Get piece in current board position
+                    Piece piece = board[i, j].Value;
+
+                    // Is there any piece there?
+                    // If the piece is of our color, increment the
+                    // heuristic inversely to the distance from the center
+                    if (piece.color == color)
+                        h += maxPoints - Dist(centerRow, centerCol, i, j);
+                    // Otherwise decrement the heuristic value using the
+                    // same criteria
+                    else
+                        h -= maxPoints - Dist(centerRow, centerCol, i, j);
+                    // If the piece is of our shape, increment the
+                    // heuristic inversely to the distance from the center
+                    if (piece.shape == color.Shape())
+                        h += maxPoints - Dist(centerRow, centerCol, i, j);
+                    // Otherwise decrement the heuristic value using the
+                    // same criteria
+                    else
+                        h -= maxPoints - Dist(centerRow, centerCol, i, j);
+
+                    // Search for the neighbours of the piece if it is from the player
+                    // For each color or shape nearby increase the score.
+                    if (piece.color == color || piece.shape == color.Shape())
+                    {
+                        h += NeighborsValue(j, i, color, board);
                     }
                 }
             }
-
-            for(int x = 0; x < board.cols; x++)
+            foreach (IEnumerable<Pos> line in board.winCorridors)
             {
-                for(int y = 0; y < board.rows; y++)
+                int piecesInLine = 0;
+                foreach (Pos pos in line)
                 {
-                    if (!board[y, x].HasValue) continue;
-
-                    Piece p = board[y, x].Value;
-                    if (p.color == color || p.shape == color.Shape())
+                    if (board[pos.row, pos.col].HasValue)
                     {
-                        h += NeighborsValue(x, y, color, board);
+                        Piece p = board[pos.row, pos.col].Value;
+
+                        if (!color.FriendOf(p))
+                        {
+                            piecesInLine++;
+                        }
+                        else
+                        {
+                            piecesInLine = 0;
+                        }
                     }
+                }
+
+                if (piecesInLine >= board.piecesInSequence)
+                {
+                    h -= WIN;
                 }
             }
             return h;
@@ -87,18 +113,33 @@ namespace BeeAI
 
             float pieceHeuristic = 0;
 
-            for(int i = minY; i < maxY; i++)
+            for (int i = minY; i < maxY; i++)
             {
-                for(int j = minX; j < maxX; j++)
+                for (int j = minX; j < maxX; j++)
                 {
-                    
+
                     if (!board[i, j].HasValue || (i == y && j == x)) continue;
                     Piece p = board[i, j].Value;
 
                     // If the piece curresponds to the player
-                    if (color.FriendOf(p))
+                    if (p.color == color && p.shape == color.Shape())
                     {
                         pieceHeuristic += AMOUNT_PIECE;
+                    }
+                    else if (p.color != color && p.shape != color.Shape())
+                    {
+                        pieceHeuristic -= AMOUNT_PIECE;
+                    }
+                    // If the piece has only the same color
+                    else if (p.color == color && p.shape != color.Shape())
+                    {
+                        pieceHeuristic += AMOUNT_COLOR;
+                        pieceHeuristic -= AMOUNT_SHAPE;
+                    }
+                    else if (p.color != color && p.shape == color.Shape())
+                    {
+                        pieceHeuristic -= AMOUNT_COLOR;
+                        pieceHeuristic += AMOUNT_SHAPE;
                     }
                 }
             }

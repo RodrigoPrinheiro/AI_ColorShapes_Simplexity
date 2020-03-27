@@ -28,7 +28,6 @@ namespace BeeAI
             board.DoMove(PShape.Square, 4);
             //board.DoMove(PShape.Square, 2);
             
-            Console.WriteLine(BeeHeuristics.Honeycomb(board, PColor.White, 2));
             BoardUpdate(board);
             Bee b = new Bee();
             b.Setup("");
