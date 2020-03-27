@@ -26,8 +26,15 @@ namespace BeeAI
             board.DoMove(PShape.Round, 6);
             board.DoMove(PShape.Round, 6);
             
-            Console.WriteLine(BeeHeuristics.Honeycomb(board, PColor.White, 7));
+            //Console.WriteLine(BeeHeuristics.Honeycomb(board, PColor.White, 7));
             BoardUpdate(board);
+            Bee b = new Bee();
+            b.Setup("");
+
+            int col = b.Think(board, CancellationToken.None).column;
+            Console.WriteLine("Chosen col: " + col);
+            Console.WriteLine("Score: " + col);
+
         }
 
         private static void BoardUpdate(Board board)
