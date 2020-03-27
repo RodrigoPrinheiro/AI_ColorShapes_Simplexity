@@ -22,11 +22,11 @@ namespace BeeAI
             board.DoMove(PShape.Round, 2);
             board.DoMove(PShape.Square, 3);
 
-            board.DoMove(PShape.Round, 6);
-            board.DoMove(PShape.Round, 6);
+            board.DoMove(PShape.Round, 4);
+            board.DoMove(PShape.Round, 5);
             board.DoMove(PShape.Round, 6);
             
-            Console.WriteLine(BeeHeuristics.Honeycomb(board, PColor.White, 7));
+            Console.WriteLine(BeeHeuristics.Honeycomb(board, PColor.White, 2));
             BoardUpdate(board);
         }
 

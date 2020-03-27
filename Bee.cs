@@ -16,7 +16,7 @@ namespace BeeAI
             if (!int.TryParse(str, out maxDepth))
             {
                 // If not possible, set it to 3 by default
-                maxDepth = 3;
+                maxDepth = 2;
             }
             turns = 0;
         }
@@ -72,6 +72,7 @@ namespace BeeAI
             // the heuristic
             else if (depth == maxDepth)
             {
+                //selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
                 selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
             }
             else // Board not final and depth not at max...
