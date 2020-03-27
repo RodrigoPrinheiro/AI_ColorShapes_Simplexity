@@ -1,33 +1,48 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using ColorShapeLinks.Common;
 using ColorShapeLinks.Common.AI;
+using ColorShapeLinks.Common.Session;
 
 namespace BeeAI
 {
     public class Bee : AbstractThinker
     {
+        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.05f;
         private int maxDepth;
         private int turns;
+        // Stores the current turn node evaluations [depth,index]
+        float[, ] nodeEvals;
+        Stopwatch stopwatch;
+        // Saves the previous best depth score for iterative deepening
+        (FutureMove move, float score) lastCompletedDepthBestMove;
+
         public override void Setup(string str)
         {
             base.Setup(str);
+
             // Try to get the maximum depth from the parameters
             if (!int.TryParse(str, out maxDepth))
             {
                 // If not possible, set it to 3 by default
-                maxDepth = 2;
+                maxDepth = 5;
             }
+            stopwatch = new Stopwatch();
             turns = 0;
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
         {
+            stopwatch.Start();
             turns += 2;
+            nodeEvals = new float[maxDepth * 100, (board.cols * 2)];
+
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
                 ABNegamax(board, ct, board.Turn, board.Turn, 0, float.NegativeInfinity, float.PositiveInfinity);
-
+            stopwatch.Reset();
             // Return best move
             return decision.move;
         }
@@ -37,6 +52,7 @@ namespace BeeAI
             Board board, CancellationToken ct,
             PColor player, PColor turn, int depth, float alpha, float beta)
         {
+
             // Move to return and its heuristic value
             (FutureMove move, float score) bestMove;
 
@@ -44,10 +60,11 @@ namespace BeeAI
             Winner winner;
 
             // If a cancellation request was made...
-            if (ct.IsCancellationRequested)
+            if (ct.IsCancellationRequested || stopwatch.ElapsedMilliseconds > TimeLimitMillis - TimeLimitMillis * TIMER_WIGGLE_ROOM_FACTOR)
             {
                 // ...set a "no move" and skip the remaining part of the algorithm
-                bestMove = (FutureMove.NoMove, float.NaN);
+                bestMove = lastCompletedDepthBestMove;
+                Console.WriteLine("stoop");
             }
             // Otherwise, if it's a final board, return the appropriate evaluation
             else if ((winner = board.CheckWinner()) != Winner.None)
@@ -68,69 +85,90 @@ namespace BeeAI
                     bestMove = (FutureMove.NoMove, 0f);
                 }
             }
-            // If we're at maximum depth and don't have a final board, use
-            // the heuristic
-            else if (depth == maxDepth)
-            {
-                bestMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn, turns));
-                //bestMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn, turns));
-            }
             else // Board not final and depth not at max...
             {
-                //...so let's test all possible moves and recursively call Negamax()
-                // for each one of them
-
-                // Initialize the selected..
-                bestMove = (FutureMove.NoMove, float.NegativeInfinity);
-
-                // Go through all columns
-                for (int i = 0; i < board.cols; i++)
+                // infinite depth
+                for (int currentDepth = depth; currentDepth < maxDepth; currentDepth++)
                 {
-                    // Skip full columns
-                    if (board.IsColumnFull(i)) continue;
+                    //...so let's test all possible moves and recursively call Negamax()
+                    // for each one of them
 
-                    // Test shapes
-                    for (int j = 0; j < 2; j++)
+                    // Initialize the selected..
+                    bestMove = (FutureMove.NoMove, float.NegativeInfinity);
+
+                    // Go through all columns
+                    for (int i = 0; i < board.cols; i++)
                     {
-                        // Get current shape
-                        PShape shape = (PShape) j;
+                        // Skip full columns
+                        if (board.IsColumnFull(i)) continue;
 
-                        // Use this variable to keep the current board's score
-                        float eval;
-
-                        // Skip unavailable shapes
-                        if (board.PieceCount(turn, shape) == 0) continue;
-
-                        // Test move
-                        board.DoMove(shape, i);
-                        // Call minimax
-                        eval = -ABNegamax(board, ct, player, turn.Other(),
-                                         depth + 1, -beta, -alpha).score;
-                        // Undo move
-                        board.UndoMove();
-
-                        // Is this the best move so far?
-                        if (eval > bestMove.score)
+                        // Test shapes
+                        for (int j = 0; j < 2; j++)
                         {
-                            // If so, update alpha
-                            alpha = eval;
+                            // Get current shape
+                            PShape shape = (PShape) j;
 
-                            // Keep the best move
-                            bestMove = (new FutureMove(i, shape), eval);
+                            // Use this variable to keep the current board's score
+                            float eval;
+                            // Store the move heuristic
+                            float thisNodeEval = BeeHeuristics.Honeycomb(board, player, turns);
 
-                            // Is alpha higher than beta?
-                            if (alpha >= beta)
+                            // Check if we should stop here
+                            if (depth == maxDepth)
                             {
-                                // If so, make alpha-beta cut and return the
-                                // best move so far
-                                return bestMove;
+                                //selectedMove = (FutureMove.NoMove, DebugHoneycomb(board, turn));
+                                bestMove = (FutureMove.NoMove, thisNodeEval);
+                            }
+                            // We can go deeper
+                            else
+                            {
+                                // Add this evaluation to the collection
+                                nodeEvals[depth, i + j] = thisNodeEval;
+
+                                // Skip unavailable shapes
+                                if (board.PieceCount(turn, shape) == 0) continue;
+
+                                // Prevent doing unnecessary iterations, 
+                                // seeing if the current heuristic is worse than previous ones 
+                                for (int k = 0; k < maxDepth; k++)
+                                    for (int l = 0; l < board.cols * 2; l++)
+                                        if (nodeEvals[k, l] > thisNodeEval && turn == player ||
+                                            nodeEvals[k, l] < thisNodeEval && turn == player.Other())
+                                            continue;
+
+                                // Test move
+                                board.DoMove(shape, i);
+                                // Call minimax
+                                eval = -ABNegamax(board, ct, player, turn.Other(), currentDepth + 1, -beta, -alpha).score;
+                                // Undo move
+                                board.UndoMove();
+
+                                // Is this the best move so far?
+                                if (eval > bestMove.score)
+                                {
+                                    // If so, update alpha
+                                    alpha = eval;
+
+                                    // Keep the best move
+                                    bestMove = (new FutureMove(i, shape), eval);
+
+                                    // Is alpha higher than beta?
+                                    if (alpha >= beta)
+                                    {
+                                        // If so, make alpha-beta cut and return the
+                                        // best move so far
+                                        return bestMove;
+                                    }
+                                }
                             }
                         }
                     }
+
+                    lastCompletedDepthBestMove = bestMove;
                 }
             }
             // Return movement and its heuristic value
-            return bestMove;
+            return lastCompletedDepthBestMove;
         }
 
         private float DebugHoneycomb(Board board, PColor color)
