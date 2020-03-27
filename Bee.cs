@@ -73,8 +73,8 @@ namespace BeeAI
             // the heuristic
             else if (depth == maxDepth)
             {
-                selectedMove = (FutureMove.NoMove, DebugHoneycomb(board, turn));
-                //selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
+                //selectedMove = (FutureMove.NoMove, DebugHoneycomb(board, turn));
+                selectedMove = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, player, turns));
             }
             else // Board not final and depth not at max...
             {
@@ -132,7 +132,7 @@ namespace BeeAI
             // Return movement and its heuristic value
             return selectedMove;
         }
-
+        
         private float DebugHoneycomb(Board board, PColor color)
         {
             // Distance between two points
