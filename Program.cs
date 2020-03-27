@@ -28,6 +28,13 @@ namespace BeeAI
             
             Console.WriteLine(BeeHeuristics.Honeycomb(board, PColor.White, 2));
             BoardUpdate(board);
+            Bee b = new Bee();
+            b.Setup("");
+
+            int col = b.Think(board, CancellationToken.None).column;
+            Console.WriteLine("Chosen col: " + col);
+            Console.WriteLine("Score: " + col);
+
         }
 
         private static void BoardUpdate(Board board)

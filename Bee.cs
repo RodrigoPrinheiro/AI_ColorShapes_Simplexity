@@ -39,6 +39,7 @@ namespace BeeAI
         {
             // Move to return and its heuristic value
             (FutureMove move, float score) selectedMove;
+            (FutureMove move, float score) bestMove = (FutureMove.NoMove, float.NegativeInfinity);
 
             // Current board state
             Winner winner;
@@ -77,12 +78,13 @@ namespace BeeAI
             }
             else // Board not final and depth not at max...
             {
-                //...so let's test all possible moves and recursively call Minimax()
+                //...so let's test all possible moves and recursively call Negamax()
                 // for each one of them
 
-                // Initialize the selected move...
+                // Initialize the selected..
                 selectedMove = (FutureMove.NoMove, float.NegativeInfinity);
 
+                // Go through all columns
                 for (int i = 0; i < board.cols; i++)
                 {
                     // Skip full columns
@@ -108,26 +110,25 @@ namespace BeeAI
                         board.UndoMove();
 
                         // Is this the best move so far?
-                        if (eval > selectedMove.score)
+                        if (eval > bestMove.score)
                         {
                             // If so, update alpha
                             alpha = eval;
 
                             // Keep the best move
-                            selectedMove = (new FutureMove(i, shape), eval);
+                            bestMove = (new FutureMove(i, shape), eval);
 
                             // Is alpha higher than beta?
                             if (alpha >= beta)
                             {
                                 // If so, make alpha-beta cut and return the
                                 // best move so far
-                                return selectedMove;
+                                return bestMove;
                             }
                         }
                     }
                 }
             }
-
             // Return movement and its heuristic value
             return selectedMove;
         }
