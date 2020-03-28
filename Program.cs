@@ -11,7 +11,7 @@ namespace BeeAI
     {
         static void Main(string[] args)
         {
-            TestHeuristic();
+            //TestHeuristic();
         }
 
         static void TestHeuristic()
@@ -30,6 +30,7 @@ namespace BeeAI
             BoardUpdate(board);
             Bee b = new Bee();
             b.Setup("");
+
 
             int col = b.Think(board, CancellationToken.None).column;
             Console.WriteLine("Chosen col: " + col);
