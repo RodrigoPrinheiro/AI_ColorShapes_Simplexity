@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using ColorShapeLinks.Common;
 using ColorShapeLinks.Common.AI;
@@ -8,23 +9,30 @@ namespace BeeAI
     public class Bee : AbstractThinker
     {
         private const float INFINITY = float.PositiveInfinity;
-        private int maxDepth;
+        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.10f;
+        private Stopwatch stopwatch;
+        private int iterations;
+
         public override void Setup(string str)
         {
             base.Setup(str);
             // Try to get the maximum depth from the parameters
-            if (!int.TryParse(str, out maxDepth))
-            {
-                // If not possible, set it to 3 by default
-                maxDepth = 3;
-            }
+            stopwatch = new Stopwatch();
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
         {
+            // Start the time count
+            stopwatch.Start();
+            iterations = 0;
+
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
                 ABNegamax(board, ct, board.Turn, 0, -INFINITY, INFINITY);
+
+            // Stop time count
+            stopwatch.Reset();
+            Console.WriteLine("Iterations: " + iterations);
 
             // Return best move
             return decision.move;
@@ -35,6 +43,7 @@ namespace BeeAI
             Board board, CancellationToken ct, PColor turn, int depth,
             float alpha, float beta)
         {
+            iterations++;
             // Move to return and its heuristic value
             (FutureMove move, float score) best;
 
@@ -70,7 +79,7 @@ namespace BeeAI
             }
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
-            else if (depth == maxDepth)
+            else if (stopwatch.ElapsedMilliseconds > TimeLimitMillis - TimeLimitMillis * TIMER_WIGGLE_ROOM_FACTOR)
             {
                 best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
@@ -89,7 +98,7 @@ namespace BeeAI
                     for (int j = 0; j < 2; j++)
                     {
                         // Get current shape
-                        PShape shape = (PShape)j;
+                        PShape shape = (PShape) j;
 
                         // Use this variable to keep the current board's score
                         float eval;
@@ -99,8 +108,7 @@ namespace BeeAI
 
                         // Test move, call minimax and undo move
                         board.DoMove(shape, i);
-                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1,
-                             -beta, -Math.Max(alpha, best.score)).score;
+                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1, -beta, -Math.Max(alpha, best.score)).score;
                         board.UndoMove();
 
                         if (eval > best.score)
@@ -108,7 +116,7 @@ namespace BeeAI
                             best.score = eval;
                             best.move = new FutureMove(i, shape);
                         }
-                        
+
                         if (best.score >= beta) break;
                     }
                 }
