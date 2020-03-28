@@ -11,7 +11,7 @@ namespace BeeAI
     {
         static void Main(string[] args)
         {
-            //TestHeuristic();
+            TestHeuristic();
         }
 
         static void TestHeuristic()
@@ -32,9 +32,10 @@ namespace BeeAI
             b.Setup("");
 
 
-            int col = b.Think(board, CancellationToken.None).column;
-            Console.WriteLine("Chosen col: " + col);
-            Console.WriteLine("Score: " + col);
+            FutureMove mv = b.Think(board, CancellationToken.None);
+            board.DoMove(mv.shape, mv.column);
+            BoardUpdate(board);
+            Console.WriteLine("Chosen col: " + mv.column);
 
         }
 
