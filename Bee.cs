@@ -13,6 +13,10 @@ namespace BeeAI
         private Stopwatch stopwatch;
         private int iterations;
 
+        private bool DeepeningTimeIsUp => 
+            stopwatch.ElapsedMilliseconds > 
+            TimeLimitMillis - TimeLimitMillis * TIMER_WIGGLE_ROOM_FACTOR;
+
         public override void Setup(string str)
         {
             base.Setup(str);
@@ -79,7 +83,7 @@ namespace BeeAI
             }
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
-            else if (stopwatch.ElapsedMilliseconds > TimeLimitMillis - TimeLimitMillis * TIMER_WIGGLE_ROOM_FACTOR)
+            else if (DeepeningTimeIsUp)
             {
                 best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
