@@ -1,174 +1,121 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using ColorShapeLinks.Common;
 using ColorShapeLinks.Common.AI;
-using ColorShapeLinks.Common.Session;
 
 namespace BeeAI
 {
     public class Bee : AbstractThinker
     {
-        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.05f;
+        private const float INFINITY = float.PositiveInfinity;
         private int maxDepth;
-        private int turns;
-        // Stores the current turn node evaluations [depth,index]
-        float[, ] nodeEvals;
-        Stopwatch stopwatch;
-        // Saves the previous best depth score for iterative deepening
-        (FutureMove move, float score) lastCompletedDepthBestMove;
-
         public override void Setup(string str)
         {
             base.Setup(str);
-
             // Try to get the maximum depth from the parameters
             if (!int.TryParse(str, out maxDepth))
             {
                 // If not possible, set it to 3 by default
-                maxDepth = 5;
+                maxDepth = 3;
             }
-            stopwatch = new Stopwatch();
-            turns = 0;
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
         {
-            stopwatch.Start();
-            turns += 2;
-            nodeEvals = new float[maxDepth * 100, (board.cols * 2)];
-
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
-                ABNegamax(board, ct, board.Turn, board.Turn, 0, float.NegativeInfinity, float.PositiveInfinity);
-            stopwatch.Reset();
+                ABNegamax(board, ct, board.Turn, 0, -INFINITY, INFINITY);
+
             // Return best move
             return decision.move;
         }
 
         // Minimax implementation
         private(FutureMove move, float score) ABNegamax(
-            Board board, CancellationToken ct,
-            PColor player, PColor turn, int depth, float alpha, float beta)
+            Board board, CancellationToken ct, PColor turn, int depth,
+            float alpha, float beta)
         {
-
             // Move to return and its heuristic value
-            (FutureMove move, float score) bestMove;
+            (FutureMove move, float score) best;
 
             // Current board state
             Winner winner;
 
             // If a cancellation request was made...
-            if (ct.IsCancellationRequested || stopwatch.ElapsedMilliseconds > TimeLimitMillis - TimeLimitMillis * TIMER_WIGGLE_ROOM_FACTOR)
+            if (ct.IsCancellationRequested)
             {
-                // ...set a "no move" and skip the remaining part of the algorithm
-                bestMove = lastCompletedDepthBestMove;
-                //Console.WriteLine("stoop");
+                // ...set a "no move" and skip the remaining part of
+                // the algorithm
+                best = (FutureMove.NoMove, float.NaN);
             }
-            // Otherwise, if it's a final board, return the appropriate evaluation
+            // Otherwise, if it's a final board, return the appropriate
+            // evaluation
             else if ((winner = board.CheckWinner()) != Winner.None)
             {
-                if (winner.ToPColor() == player)
+                if (winner.ToPColor() == turn)
                 {
                     // AI player wins, return highest possible score
-                    bestMove = (FutureMove.NoMove, float.PositiveInfinity);
+                    best = (FutureMove.NoMove, INFINITY);
                 }
-                else if (winner.ToPColor() == player.Other())
+                else if (winner.ToPColor() == turn.Other())
                 {
                     // Opponent wins, return lowest possible score
-                    bestMove = (FutureMove.NoMove, float.NegativeInfinity);
+                    best = (FutureMove.NoMove, -INFINITY);
                 }
                 else
                 {
                     // A draw, return zero
-                    bestMove = (FutureMove.NoMove, 0f);
+                    best = (FutureMove.NoMove, 0f);
                 }
+            }
+            // If we're at maximum depth and don't have a final board, use
+            // the heuristic
+            else if (depth == maxDepth)
+            {
+                best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
             else // Board not final and depth not at max...
             {
-                // infinite depth
-                for (int currentDepth = depth; currentDepth < maxDepth; currentDepth++)
+                // Initialize the selected move...
+                best = (FutureMove.NoMove, -INFINITY);
+
+                // Test each column
+                for (int i = 0; i < Cols; i++)
                 {
-                    //...so let's test all possible moves and recursively call Negamax()
-                    // for each one of them
+                    // Skip full columns
+                    if (board.IsColumnFull(i)) continue;
 
-                    // Initialize the selected..
-                    bestMove = (FutureMove.NoMove, float.NegativeInfinity);
-
-                    // Go through all columns
-                    for (int i = 0; i < board.cols; i++)
+                    // Test shapes
+                    for (int j = 0; j < 2; j++)
                     {
-                        // Skip full columns
-                        if (board.IsColumnFull(i)) continue;
+                        // Get current shape
+                        PShape shape = (PShape)j;
 
-                        // Test shapes
-                        for (int j = 0; j < 2; j++)
+                        // Use this variable to keep the current board's score
+                        float eval;
+
+                        // Skip unavailable shapes
+                        if (board.PieceCount(turn, shape) == 0) continue;
+
+                        // Test move, call minimax and undo move
+                        board.DoMove(shape, i);
+                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1,
+                             -beta, -Math.Max(alpha, best.score)).score;
+                        board.UndoMove();
+
+                        if (eval > best.score)
                         {
-                            // Get current shape
-                            PShape shape = (PShape) j;
-
-                            // Use this variable to keep the current board's score
-                            float eval;
-                            // Store the move heuristic
-                            float thisNodeEval = DebugHoneycomb(board, player);
-
-                            // Check if we should stop here
-                            if (depth == maxDepth)
-                            {
-                                //selectedMove = (FutureMove.NoMove, DebugHoneycomb(board, turn));
-                                bestMove = (FutureMove.NoMove, thisNodeEval);
-                            }
-                            // We can go deeper
-                            else
-                            {
-                                // Add this evaluation to the collection
-                                nodeEvals[depth, i + j] = thisNodeEval;
-
-                                // Skip unavailable shapes
-                                if (board.PieceCount(turn, shape) == 0) continue;
-
-                                // Prevent doing unnecessary iterations, 
-                                // seeing if the current heuristic is worse than previous ones 
-                                for (int k = 0; k < maxDepth; k++)
-                                    for (int l = 0; l < board.cols * 2; l++)
-                                        if (nodeEvals[k, l] > thisNodeEval && turn == player ||
-                                            nodeEvals[k, l] < thisNodeEval && turn == player.Other())
-                                            continue;
-
-                                // Test move
-                                board.DoMove(shape, i);
-                                // Call minimax
-                                eval = -ABNegamax(board, ct, player, turn.Other(), currentDepth + 1, -beta, -alpha).score;
-                                // Undo move
-                                board.UndoMove();
-
-                                // Is this the best move so far?
-                                if (eval > bestMove.score)
-                                {
-                                    // If so, update alpha
-                                    alpha = eval;
-
-                                    // Keep the best move
-                                    bestMove = (new FutureMove(i, shape), eval);
-
-                                    // Is alpha higher than beta?
-                                    if (alpha >= beta)
-                                    {
-                                        // If so, make alpha-beta cut and return the
-                                        // best move so far
-                                        return bestMove;
-                                    }
-                                }
-                            }
+                            best.score = eval;
+                            best.move = new FutureMove(i, shape);
                         }
+                        
+                        if (best.score >= beta) break;
                     }
-
-                    lastCompletedDepthBestMove = bestMove;
                 }
             }
+
             // Return movement and its heuristic value
-            return lastCompletedDepthBestMove;
+            return best;
         }
 
         private float DebugHoneycomb(Board board, PColor color)

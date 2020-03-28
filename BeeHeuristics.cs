@@ -10,9 +10,9 @@ namespace BeeAI
     public static class BeeHeuristics
     {
         // Amount per
-        const float AMOUNT_PIECE = 3;
+        const float AMOUNT_PIECE = 4;
         const float AMOUNT_COLOR = 1;
-        const float AMOUNT_SHAPE = 4;
+        const float AMOUNT_SHAPE = 2;
         const float WIN = float.PositiveInfinity;
 
         // Heuristic function
@@ -68,7 +68,7 @@ namespace BeeAI
                     else
                         h -= maxPoints - Dist(centerRow, centerCol, i, j);
 
-                    // Search for the neighbours of the piece if it is from the player
+                    // Search for the neighbors of the piece if it is from the player
                     // For each color or shape nearby increase the score.
                     if (piece.color == color || piece.shape == color.Shape())
                     {
@@ -85,7 +85,7 @@ namespace BeeAI
                     {
                         Piece p = board[pos.row, pos.col].Value;
 
-                        if (!color.FriendOf(p))
+                        if (color.FriendOf(p))
                         {
                             piecesInLine++;
                         }
@@ -93,12 +93,13 @@ namespace BeeAI
                         {
                             piecesInLine = 0;
                         }
+
                     }
                 }
 
-                if (piecesInLine >= board.piecesInSequence)
+                if (piecesInLine == board.piecesInSequence)
                 {
-                    h -= WIN;
+                    h += WIN;
                 }
             }
             return h;
