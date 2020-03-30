@@ -8,10 +8,27 @@ namespace BeeAI
 {
     public class Bee : AbstractThinker
     {
+        /// <summary>
+        /// Infinity constant to facilitate reading the code.
+        /// </summary>
         private const float INFINITY = float.PositiveInfinity;
-        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.10f;
+        /// <summary>
+        /// Constant with how much less time from the desqualification time the AI
+        /// will have.
+        /// </summary>
+        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.15f;
+        /// <summary>
+        /// Stopwatch to count how much time the AI has left to think
+        /// </summary>
         private Stopwatch stopwatch;
+        /// <summary>
+        /// Debug variable to see how many iterations the AI did.
+        /// </summary>        
         private int iterations;
+        /// <summary>
+        /// Order array containing the order in witch the AI should search for a move.
+        /// </summary>
+        private int[] columnOrdering;
 
         private bool DeepeningTimeIsUp => 
             stopwatch.ElapsedMilliseconds > 
@@ -22,6 +39,20 @@ namespace BeeAI
             base.Setup(str);
             // Try to get the maximum depth from the parameters
             stopwatch = new Stopwatch();
+
+            columnOrdering = new int[Cols];
+            // Setup the move order, go through the board width (x)
+            for(int i = 0; i < Cols; i++)
+            {
+                // With i = 0 it will be the middle column of the board.
+                // With i = 1 then it will be Cols/2 + (-1)
+                // with i = 1 then it will be Cols/2 + 1
+                // Etc until we have a distribution of middle of the board thowards the
+                // edges.
+                // Ends up being 3, 2, 4, 1, 5, 0, 6 in a regular size board.
+                columnOrdering[i] = Cols/2 + (1 - 2 * (i % 2)) * (i + 1)/2;
+                Console.WriteLine(columnOrdering[i]);
+            }
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
@@ -96,7 +127,7 @@ namespace BeeAI
                 for (int i = 0; i < Cols; i++)
                 {
                     // Skip full columns
-                    if (board.IsColumnFull(i)) continue;
+                    if (board.IsColumnFull(columnOrdering[i])) continue;
 
                     // Test shapes
                     for (int j = 0; j < 2; j++)
@@ -111,14 +142,15 @@ namespace BeeAI
                         if (board.PieceCount(turn, shape) == 0) continue;
 
                         // Test move, call minimax and undo move
-                        board.DoMove(shape, i);
-                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1, -beta, -Math.Max(alpha, best.score)).score;
+                        board.DoMove(shape, columnOrdering[i]);
+                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1,
+                             -beta, -Math.Max(alpha, best.score)).score;
                         board.UndoMove();
 
                         if (eval > best.score)
                         {
                             best.score = eval;
-                            best.move = new FutureMove(i, shape);
+                            best.move = new FutureMove(columnOrdering[i], shape);
                         }
 
                         if (best.score >= beta) break;
@@ -128,59 +160,6 @@ namespace BeeAI
 
             // Return movement and its heuristic value
             return best;
-        }
-
-        private float DebugHoneycomb(Board board, PColor color)
-        {
-            // Distance between two points
-            float Dist(float x1, float y1, float x2, float y2)
-            {
-                return (float) Math.Sqrt(
-                    Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
-            }
-
-            // Determine the center row
-            float centerRow = board.rows / 2;
-            float centerCol = board.cols / 2;
-
-            // Maximum points a piece can be awarded when it's at the center
-            float maxPoints = Dist(centerRow, centerCol, 0, 0);
-
-            // Current heuristic value
-            float h = 0;
-
-            // Loop through the board looking for pieces
-            for (int i = 0; i < board.rows; i++)
-            {
-                for (int j = 0; j < board.cols; j++)
-                {
-                    // Get piece in current board position
-                    Piece? piece = board[i, j];
-
-                    // Is there any piece there?
-                    if (piece.HasValue)
-                    {
-                        // If the piece is of our color, increment the
-                        // heuristic inversely to the distance from the center
-                        if (piece.Value.color == color)
-                            h += maxPoints - Dist(centerRow, centerCol, i, j);
-                        // Otherwise decrement the heuristic value using the
-                        // same criteria
-                        else
-                            h -= maxPoints - Dist(centerRow, centerCol, i, j);
-                        // If the piece is of our shape, increment the
-                        // heuristic inversely to the distance from the center
-                        if (piece.Value.shape == color.Shape())
-                            h += maxPoints - Dist(centerRow, centerCol, i, j);
-                        // Otherwise decrement the heuristic value using the
-                        // same criteria
-                        else
-                            h -= maxPoints - Dist(centerRow, centerCol, i, j);
-                    }
-                }
-            }
-            // Return the final heuristic score for the given board
-            return h;
         }
     }
 }

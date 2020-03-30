@@ -11,7 +11,7 @@ namespace BeeAI
     {
         static void Main(string[] args)
         {
-            //TestHeuristic();
+
         }
 
         static void TestHeuristic()

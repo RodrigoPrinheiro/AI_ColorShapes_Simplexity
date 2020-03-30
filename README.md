@@ -11,6 +11,13 @@
 
 ### The Negamax Algorithm
 
+- #### Specifics about our Negamax approach
+
+- #### Move Ordering
+- #### Iterative Deepening
+
 ### Heuristic evaluation
+- #### How we approached the problem
+- #### Specifics about our Heuristic
 
 ## References
