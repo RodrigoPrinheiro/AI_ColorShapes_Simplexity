@@ -18,7 +18,7 @@ namespace BeeAI
         /// </summary>
         private const float TIMER_WIGGLE_ROOM_FACTOR = 0.15f;
 
-        private const int INITIAL_MAX_DEPTH = 1;
+        private const int INITIAL_MAX_DEPTH = 2;
         /// <summary>
         /// Stopwatch to count how much time the AI has left to think
         /// </summary>
@@ -69,25 +69,21 @@ namespace BeeAI
                 (FutureMove.NoMove, -INFINITY, board);
             (FutureMove move, float score, Board board) lastDepthDecision = decision;
 
-            for (int i = 0; !DeepeningTimeIsUp; i++)
+            while (!DeepeningTimeIsUp)
             {
                 lastDepthDecision = decision;
 
                 // Invoke minimax, starting with zero depth
                 decision =
-                    ABNegamax(decision.board, ct, decision.board.Turn, i, -INFINITY, decision.score);
+                    ABNegamax(decision.board, ct, decision.board.Turn, 0, -INFINITY, decision.score);
 
                 if (decision.score == float.NaN) decision = lastDepthDecision;
-
-                maxDepth++;
             }
-
-            maxDepth = INITIAL_MAX_DEPTH;
 
             // Stop time count
             stopwatch.Reset();
-            maxDepth = INITIAL_MAX_DEPTH;
             Console.WriteLine("Iterations: " + iterations);
+            Console.WriteLine("Decision: " + decision.move.column);
 
             // Return best move
             return decision.move;
