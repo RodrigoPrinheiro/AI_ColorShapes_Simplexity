@@ -3,8 +3,12 @@
 ## Authors
 
 * Rodrigo Pinheiro a21802488
-  * Base heuristic algorithm
+  * Heuristic algorithm
+  * Move Ordering
+  * ABNegascout
 * Tomás Franco a21803301
+  * Heuristic algorithm
+  * ~~Iterative deepening~~
   * Base Negamax Implementation
 
 ## AI Description
