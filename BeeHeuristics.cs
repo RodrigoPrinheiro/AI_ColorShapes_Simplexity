@@ -38,7 +38,7 @@ namespace BeeAI
         /// <param name="board"> Current game Board</param>
         /// <param name="color"> Color to do the heuristic for</param>
         /// <returns> Heuristic value of the board</returns>
-        public static float Honeycomb(Board board, PColor color, int turns)
+        public static float Honeycomb(Board board, PColor color)
         {
             // Max points the ai can hold
             float h = START_VALUE;
