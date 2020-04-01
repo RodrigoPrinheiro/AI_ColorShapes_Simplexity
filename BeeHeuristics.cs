@@ -12,7 +12,7 @@ namespace BeeAI
         /// <summary>
         /// The base max value that will decrement
         /// </summary>
-        public const float WIN_VALUE = 150;
+        public const float WIN_VALUE = 1000;
         /// <summary>
         /// The base max value that will decrement
         /// </summary>
@@ -38,7 +38,7 @@ namespace BeeAI
         /// <param name="board"> Current game Board</param>
         /// <param name="color"> Color to do the heuristic for</param>
         /// <returns> Heuristic value of the board</returns>
-        public static float Honeycomb(Board board, PColor color)
+        public static float Honeycomb(Board board, PColor color, int turns)
         {
             // Max points the ai can hold
             float h = START_VALUE;
@@ -56,35 +56,36 @@ namespace BeeAI
                 // Check every position on the win corridor
                 foreach (Pos pos in line)
                 {
-                    // If there is a piece there
-                    if (board[pos.row, pos.col].HasValue)
+                    // If there is no piece there
+                    if (!board[pos.row, pos.col].HasValue) continue;
+
+                    Piece p = board[pos.row, pos.col].Value;
+
+                    // Check if the piece is friendly towards the given piece
+                    if (color.FriendOf(p))
                     {
-                        Piece p = board[pos.row, pos.col].Value;
+                        // Is the color different
+                        if (color != p.color)
+                            h -= AMOUNT_COLOR;
+                        // Is the shape different
+                        if (color.Shape() != p.shape)
+                            h -= AMOUNT_SHAPE;
 
-                        // Check if the piece is friendly towards the given piece
-                        if (color.FriendOf(p))
+                        // The line is not corrupted
+                        if (canUseLine)
+                            allyPiecesInLine++;
+
+                        enemyCanUseLine = false;
+                    }
+                    // The line is unusable
+                    else
+                    {
+                        canUseLine = false;
+                        h -= AMOUNT_PIECE;
+
+                        if (enemyCanUseLine)
                         {
-                            // Is the color different
-                            if (color != p.color)
-                                h -= AMOUNT_COLOR;
-                            // Is the shape different
-                            if (color.Shape() != p.shape)
-                                h -= AMOUNT_SHAPE;
-
-                            // The line is not corrupted
-                            if (canUseLine)
-                                allyPiecesInLine++;
-
-                            enemyCanUseLine = false;
-                        }
-                        // The line is unusable
-                        else
-                        {
-                            canUseLine = false;
-                            h -= AMOUNT_PIECE;
-
-                            if (enemyCanUseLine)
-                                enemyPiecesInLine++;
+                            enemyPiecesInLine++;
                         }
                     }
                 }
@@ -99,6 +100,9 @@ namespace BeeAI
                 {
                     enemyCheckFound = true;
                 }
+
+                // Ome final uneven point
+                h -= enemyPiecesInLine - allyPiecesInLine;
             }
 
             // Can the enemy win next turn
