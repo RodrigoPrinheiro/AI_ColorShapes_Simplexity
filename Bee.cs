@@ -18,7 +18,6 @@ namespace BeeAI
         /// </summary>
         private const float TIMER_WIGGLE_ROOM_FACTOR = 0.15f;
 
-        private const int INITIAL_MAX_DEPTH = 2;
         /// <summary>
         /// Stopwatch to count how much time the AI has left to think
         /// </summary>
@@ -57,7 +56,6 @@ namespace BeeAI
                 columnOrdering[i] = Cols / 2 + (1 - 2 * (i % 2)) * (i + 1) / 2;
                 Console.WriteLine(columnOrdering[i]);
             }
-            maxDepth = INITIAL_MAX_DEPTH;
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
