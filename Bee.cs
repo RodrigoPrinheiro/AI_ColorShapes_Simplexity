@@ -17,6 +17,8 @@ namespace BeeAI
         /// will have.
         /// </summary>
         private const float TIMER_WIGGLE_ROOM_FACTOR = 0.15f;
+
+        private const int INITIAL_MAX_DEPTH = 2;
         /// <summary>
         /// Stopwatch to count how much time the AI has left to think
         /// </summary>
@@ -30,8 +32,10 @@ namespace BeeAI
         /// </summary>
         private int[] columnOrdering;
 
-        private bool DeepeningTimeIsUp => 
-            stopwatch.ElapsedMilliseconds > 
+        private int maxDepth;
+
+        private bool DeepeningTimeIsUp =>
+            stopwatch.ElapsedMilliseconds >
             TimeLimitMillis - TimeLimitMillis * TIMER_WIGGLE_ROOM_FACTOR;
 
         public override void Setup(string str)
@@ -42,7 +46,7 @@ namespace BeeAI
 
             columnOrdering = new int[Cols];
             // Setup the move order, go through the board width (x)
-            for(int i = 0; i < Cols; i++)
+            for (int i = 0; i < Cols; i++)
             {
                 // With i = 0 it will be the middle column of the board.
                 // With i = 1 then it will be Cols/2 + (-1)
@@ -50,9 +54,10 @@ namespace BeeAI
                 // Etc until we have a distribution of middle of the board thowards the
                 // edges.
                 // Ends up being 3, 2, 4, 1, 5, 0, 6 in a regular size board.
-                columnOrdering[i] = Cols/2 + (1 - 2 * (i % 2)) * (i + 1)/2;
+                columnOrdering[i] = Cols / 2 + (1 - 2 * (i % 2)) * (i + 1) / 2;
                 Console.WriteLine(columnOrdering[i]);
             }
+            maxDepth = INITIAL_MAX_DEPTH;
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)
@@ -60,7 +65,6 @@ namespace BeeAI
             // Start the time count
             stopwatch.Start();
             iterations = 0;
-
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
                 ABNegamax(board, ct, board.Turn, 0, 3, -INFINITY, INFINITY);
@@ -68,6 +72,7 @@ namespace BeeAI
             // Stop time count
             stopwatch.Reset();
             Console.WriteLine("Iterations: " + iterations);
+            Console.WriteLine("Decision: " + decision.move.column);
 
             // Return best move
             return decision.move;
@@ -166,12 +171,13 @@ namespace BeeAI
 
                             if (best.score >= beta)
                             {
-                                
+                                return best;
                             }
-                        }
 
+                            // Update window
+                            adaptiveBeta = Math.Max(alpha, best.score) + 1;
+                        }
                         board.UndoMove();
-                        if (best.score >= beta) break;
                     }
                 }
             }
@@ -218,6 +224,10 @@ namespace BeeAI
                     best = (FutureMove.NoMove, 0f);
                 }
             }
+            else if (DeepeningTimeIsUp)
+            {
+                best = (FutureMove.NoMove, float.NaN);
+            }
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
             else if (depth == maxDepth)
@@ -243,7 +253,7 @@ namespace BeeAI
                         PShape shape = j == 0 ? turn.Shape() : turn.Other().Shape();
 
                         // Use this variable to keep the current board's score
-                        float eval;
+                        float eval = -INFINITY;
 
                         // Skip unavailable shapes
                         if (board.PieceCount(turn, shape) == 0) continue;
@@ -255,6 +265,13 @@ namespace BeeAI
                              -beta, -Math.Max(alpha, best.score)).score;
                         board.UndoMove();
 
+                        if (eval == float.NaN)
+                        {
+                            best.score = eval;
+                            best.move = FutureMove.NoMove;
+                            return best;
+                        }
+
                         if (eval > best.score)
                         {
                             best.score = eval;
@@ -264,6 +281,16 @@ namespace BeeAI
                         if (best.score >= beta) break;
                     }
                 }
+
+                // if (!DeepeningTimeIsUp && depth + 1 == maxDepth)
+                // {
+                //     (FutureMove move, float score, Board board) depthBest = best;
+                //     best = ABNegamax(board, ct, turn, depth, alpha, beta);
+
+                //     if (best.score == float.NaN) 
+
+                //     maxDepth = depth + 1;
+                // }
             }
 
             // Return movement and its heuristic value
