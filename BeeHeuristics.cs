@@ -61,7 +61,7 @@ namespace BeeAI
                     {
                         Piece p = board[pos.row, pos.col].Value;
 
-                        // Check if the piece is friendly towards the given color
+                        // Check if the piece is friendly towards the given piece
                         if (color.FriendOf(p))
                         {
                             // Is the color different
