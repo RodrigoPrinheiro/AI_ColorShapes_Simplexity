@@ -28,78 +28,34 @@ namespace BeeAI
             // Max points the ai can hold
             float h = 0;
 
-            float Dist(float x1, float y1, float x2, float y2)
-            {
-                return (float)Math.Sqrt(
-                    Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
-            }
-
-            // Determine the center row
-            float centerRow = board.rows / 2;
-            float centerCol = board.cols / 2;
-
-            // Maximum points a piece can be awarded when it's at the center
-            float maxPoints = Dist(centerRow, centerCol, 0, 0);
-
-            // Loop through the board looking for pieces
-            for (int i = 0; i < board.rows; i++)
-            {
-                for (int j = 0; j < board.cols; j++)
-                {
-                    if (!board[i, j].HasValue) continue;
-                    // Get piece in current board position
-                    Piece piece = board[i, j].Value;
-
-                    // Is there any piece there?
-                    // If the piece is of our color, increment the
-                    // heuristic inversely to the distance from the center
-                    if (piece.color == color)
-                        h += maxPoints - Dist(centerRow, centerCol, i, j);
-                    // Otherwise decrement the heuristic value using the
-                    // same criteria
-                    else
-                        h -= maxPoints - Dist(centerRow, centerCol, i, j);
-                    // If the piece is of our shape, increment the
-                    // heuristic inversely to the distance from the center
-                    if (piece.shape == color.Shape())
-                        h += maxPoints - Dist(centerRow, centerCol, i, j);
-                    // Otherwise decrement the heuristic value using the
-                    // same criteria
-                    else
-                        h -= maxPoints - Dist(centerRow, centerCol, i, j);
-
-                    // Search for the neighbors of the piece if it is from the player
-                    // For each color or shape nearby increase the score.
-                    if (piece.color == color || piece.shape == color.Shape())
-                    {
-                        h += NeighborsValue(j, i, color, board);
-                    }
-                }
-            }
             foreach (IEnumerable<Pos> line in board.winCorridors)
             {
                 int piecesInLine = 0;
                 foreach (Pos pos in line)
                 {
+                    bool canUseLine = true;
                     if (board[pos.row, pos.col].HasValue)
                     {
                         Piece p = board[pos.row, pos.col].Value;
 
-                        if (color.FriendOf(p))
+                        if (color.FriendOf(p) && canUseLine)
                         {
+                            h += AMOUNT_PIECE;
                             piecesInLine++;
                         }
                         else
                         {
+                            canUseLine = false;
+                            h -= AMOUNT_PIECE;
                             piecesInLine = 0;
                         }
 
                     }
                 }
 
-                if (piecesInLine == board.piecesInSequence)
+                if (piecesInLine == board.piecesInSequence - 1)
                 {
-                    h += WIN;
+                    h += AMOUNT_PIECE * board.piecesInSequence;
                 }
             }
             return h;

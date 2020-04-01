@@ -63,7 +63,7 @@ namespace BeeAI
 
             // Invoke minimax, starting with zero depth
             (FutureMove move, float score) decision =
-                ABNegamax(board, ct, board.Turn, 0, -INFINITY, INFINITY);
+                ABNegamax(board, ct, board.Turn, 0, 3, -INFINITY, INFINITY);
 
             // Stop time count
             stopwatch.Reset();
@@ -73,15 +73,13 @@ namespace BeeAI
             return decision.move;
         }
 
-        // Minimax implementation
-        private(FutureMove move, float score) ABNegamax(
-            Board board, CancellationToken ct, PColor turn, int depth,
+        private(FutureMove move, float score) NegaScout(
+            Board board, CancellationToken ct, PColor turn, int depth, int maxDepth,
             float alpha, float beta)
         {
             iterations++;
             // Move to return and its heuristic value
             (FutureMove move, float score) best;
-
             // Current board state
             Winner winner;
 
@@ -114,7 +112,115 @@ namespace BeeAI
             }
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
-            else if (DeepeningTimeIsUp)
+            else if (depth == maxDepth)
+            {
+                best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
+            }
+            else // Board not final and depth not at max...
+            {
+                // Initialize the selected move...
+                best = (FutureMove.NoMove, -INFINITY);
+                float adaptiveBeta = beta;
+
+                // Test each column
+                for (int i = 0; i < Cols; i++)
+                {
+                    // Skip full columns
+                    if (board.IsColumnFull(columnOrdering[i])) continue;
+
+                    // Test shapes
+                    for (int j = 0; j < 2; j++)
+                    {
+                        // Order by the shape, play's the current turn shape first
+                        // Get current shape
+                        PShape shape = j == 0 ? turn.Shape() : turn.Other().Shape();
+
+                        // Use this variable to keep the current board's score
+                        float eval;
+
+                        // Skip unavailable shapes
+                        if (board.PieceCount(turn, shape) == 0) continue;
+
+                        // Test move, call minimax and undo move
+                        board.DoMove(shape, columnOrdering[i]);
+                        // Get score and witch the sign
+                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1, maxDepth,
+                             -adaptiveBeta, -Math.Max(alpha, best.score)).score;
+
+                        if (eval > best.score)
+                        {
+                            // Do a regular Negamax search if this is true
+                            if (adaptiveBeta == beta || depth >= maxDepth - 2)
+                            {
+                                best.score = eval;
+                                best.move = new FutureMove(columnOrdering[i], shape);
+                            }
+                            // Else call the Negascout again
+                            else
+                            {
+                                float bestNegativeScore;
+                                (best.move, bestNegativeScore) = NegaScout(board, ct,
+                                    turn.Other(), depth, maxDepth, -beta, -eval);
+                                best.score = -bestNegativeScore;
+                            }
+
+                            if (best.score >= beta)
+                            {
+                                
+                            }
+                        }
+
+                        board.UndoMove();
+                        if (best.score >= beta) break;
+                    }
+                }
+            }
+
+            // Return movement and its heuristic value
+            return best;
+        }
+
+        // Minimax implementation
+        private(FutureMove move, float score) ABNegamax(
+            Board board, CancellationToken ct, PColor turn, int depth, int maxDepth,
+            float alpha, float beta)
+        {
+            iterations++;
+            // Move to return and its heuristic value
+            (FutureMove move, float score) best;
+            // Current board state
+            Winner winner;
+
+            // If a cancellation request was made...
+            if (ct.IsCancellationRequested)
+            {
+                // ...set a "no move" and skip the remaining part of
+                // the algorithm
+                best = (FutureMove.NoMove, float.NaN);
+            }
+            // Otherwise, if it's a final board, return the appropriate
+            // evaluation
+            else if ((winner = board.CheckWinner()) != Winner.None)
+            {
+                if (winner.ToPColor() == turn)
+                {
+                    // AI player wins, return highest possible score
+                    best = (FutureMove.NoMove, INFINITY);
+                }
+                else if (winner.ToPColor() == turn.Other())
+                {
+                    // Opponent wins, return lowest possible score
+                    best = (FutureMove.NoMove, -INFINITY);
+                }
+                else
+                {
+                    // A draw, return zero
+                    best = (FutureMove.NoMove, 0f);
+                }
+            }
+            // If we're at maximum depth and don't have a final board, use
+            // the heuristic
+            else if (depth == maxDepth)
             {
                 best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
@@ -132,8 +238,9 @@ namespace BeeAI
                     // Test shapes
                     for (int j = 0; j < 2; j++)
                     {
+                        // Order by the shape, play's the current turn shape first
                         // Get current shape
-                        PShape shape = (PShape) j;
+                        PShape shape = j == 0 ? turn.Shape() : turn.Other().Shape();
 
                         // Use this variable to keep the current board's score
                         float eval;
@@ -143,7 +250,8 @@ namespace BeeAI
 
                         // Test move, call minimax and undo move
                         board.DoMove(shape, columnOrdering[i]);
-                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1,
+                        // Get score and witch the sign
+                        eval = -ABNegamax(board, ct, turn.Other(), depth + 1, maxDepth,
                              -beta, -Math.Max(alpha, best.score)).score;
                         board.UndoMove();
 
