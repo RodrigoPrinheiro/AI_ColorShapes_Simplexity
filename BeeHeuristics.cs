@@ -31,9 +31,9 @@ namespace BeeAI
             foreach (IEnumerable<Pos> line in board.winCorridors)
             {
                 int piecesInLine = 0;
+                bool canUseLine = true;
                 foreach (Pos pos in line)
                 {
-                    bool canUseLine = true;
                     if (board[pos.row, pos.col].HasValue)
                     {
                         Piece p = board[pos.row, pos.col].Value;
