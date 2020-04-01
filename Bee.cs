@@ -17,22 +17,13 @@ namespace BeeAI
         /// </summary>        
         private int iterations;
         private float previous;
-        private uint[] zobristKey;
         public override void Setup(string str)
         {
             base.Setup(str);
             Random random = new Random();
             previous = 0;
 
-            // Zobrist key to hold the size of the board, 2 different colors
-            // and 2 different shapes.
-            int keySize = (Cols * Rows) * 2 * 2;
-            zobristKey = new uint[keySize];
-            // Init the key
-            for (int i = 0; i <= keySize; i++)
-            {
-                zobristKey[i] = (uint) random.Next();
-            }
+            
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)

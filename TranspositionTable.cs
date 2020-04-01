@@ -7,7 +7,7 @@ namespace BeeAI
     public class TranspositionTable
     {
         // Square / Shape / Color
-        private uint[][][] zobristKey;
+        private readonly uint[][][] zobristKey;
         private IDictionary<ulong, TableEntry> entries;
         private ulong key;
         public ulong CurrentKey {get; private set;}
