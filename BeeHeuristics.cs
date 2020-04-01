@@ -1,19 +1,35 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using ColorShapeLinks.Common;
 using ColorShapeLinks.Common.AI;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace BeeAI
 {
     public static class BeeHeuristics
     {
-        // Amount per
-        const float AMOUNT_PIECE = 4;
+        /// <summary>
+        /// The base max value that will decrement
+        /// </summary>
+        public const float WIN_VALUE = 150;
+        /// <summary>
+        /// The base max value that will decrement
+        /// </summary>
+        private const float START_VALUE = 100;
+
+        /// <summary>
+        /// The amount of points to remove if the color ain't the same
+        /// </summary>
         const float AMOUNT_COLOR = 1;
+        /// <summary>
+        /// The amount of points to remove if the shape ain't the same
+        /// </summary>
         const float AMOUNT_SHAPE = 2;
-        const float WIN = float.PositiveInfinity;
+        /// <summary>
+        /// If a piece is the complete opposite
+        /// </summary>
+        const float AMOUNT_PIECE = AMOUNT_COLOR + AMOUNT_SHAPE;
 
         // Heuristic function
         /// <summary>
@@ -21,44 +37,72 @@ namespace BeeAI
         /// </summary>
         /// <param name="board"> Current game Board</param>
         /// <param name="color"> Color to do the heuristic for</param>
-        /// <param name="placedPieces"> Number of placed pieces from both players</param>
         /// <returns> Heuristic value of the board</returns>
         public static float Honeycomb(Board board, PColor color)
         {
             // Max points the ai can hold
-            float h = 0;
+            float h = START_VALUE;
+            bool enemyCheckFound = false;
 
+            // Run through every win corridor
             foreach (IEnumerable<Pos> line in board.winCorridors)
             {
-                int piecesInLine = 0;
+                // Set defaults
+                int allyPiecesInLine = 0;
+                int enemyPiecesInLine = 0;
                 bool canUseLine = true;
+                bool enemyCanUseLine = true;
+
+                // Check every position on the win corridor
                 foreach (Pos pos in line)
                 {
+                    // If there is a piece there
                     if (board[pos.row, pos.col].HasValue)
                     {
                         Piece p = board[pos.row, pos.col].Value;
 
-                        if (color.FriendOf(p) && canUseLine)
+                        // Check if the piece is friendly towards the given color
+                        if (color.FriendOf(p))
                         {
-                            h += AMOUNT_PIECE;
-                            piecesInLine++;
+                            // Is the color different
+                            if (color != p.color)
+                                h -= AMOUNT_COLOR;
+                            // Is the shape different
+                            if (color.Shape() != p.shape)
+                                h -= AMOUNT_SHAPE;
+
+                            // The line is not corrupted
+                            if (canUseLine)
+                                allyPiecesInLine++;
+
+                            enemyCanUseLine = false;
                         }
+                        // The line is unusable
                         else
                         {
                             canUseLine = false;
                             h -= AMOUNT_PIECE;
-                            piecesInLine = 0;
-                        }
 
+                            if (enemyCanUseLine)
+                                enemyPiecesInLine++;
+                        }
                     }
                 }
 
-                if (piecesInLine == board.piecesInSequence - 1)
+                // Do we have a winning sequence?
+                if (allyPiecesInLine == board.piecesInSequence - 1)
                 {
-                    h += AMOUNT_PIECE * board.piecesInSequence;
+                    return WIN_VALUE;
+                }
+                // Does the enemy have a winning sequence?
+                if (enemyPiecesInLine == board.piecesInSequence - 1)
+                {
+                    enemyCheckFound = true;
                 }
             }
-            return h;
+
+            // Can the enemy win next turn
+            return enemyCheckFound ? float.NegativeInfinity : h;
         }
 
         private static float NeighborsValue(int x, int y, PColor color, Board board)
