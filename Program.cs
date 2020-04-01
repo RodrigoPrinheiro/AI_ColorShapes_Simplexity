@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using ColorShapeLinks.Common;
-using ColorShapeLinks.Common.Session;
-using System.Linq;
 using ColorShapeLinks.Common.AI;
+using ColorShapeLinks.Common.Session;
 
 namespace BeeAI
 {
@@ -11,7 +11,7 @@ namespace BeeAI
     {
         static void Main(string[] args)
         {
-
+            TestHeuristic();
         }
 
         static void TestHeuristic()
@@ -21,20 +21,26 @@ namespace BeeAI
             board.DoMove(PShape.Square, 3);
             board.DoMove(PShape.Round, 5);
             board.DoMove(PShape.Square, 3);
+            board.DoMove(PShape.Round, 5);
+            board.DoMove(PShape.Square, 3);
 
-            board.DoMove(PShape.Round, 6);
-            board.DoMove(PShape.Square, 5);
-            board.DoMove(PShape.Round, 4);
-            board.DoMove(PShape.Square, 4);
-            //board.DoMove(PShape.Square, 2);
-            
+            // board.DoMove(PShape.Round, 6);
+            // board.DoMove(PShape.Square, 5);
+            // board.DoMove(PShape.Round, 4);
+            // board.DoMove(PShape.Square, 4);
+            // board.DoMove(PShape.Square, 2);
+
             BoardUpdate(board);
-            Bee b = new Bee();
-            b.Setup("");
 
-            int col = b.Think(board, CancellationToken.None).column;
-            Console.WriteLine("Chosen col: " + col);
-            Console.WriteLine("Score: " + col);
+            Console.WriteLine(board.Turn);
+            Console.WriteLine(BeeHeuristics.Honeycomb(board, board.Turn));
+
+            // Bee b = new Bee();
+            // b.Setup("");
+
+            //int col = b.Think(board, CancellationToken.None).column;
+            //Console.WriteLine("Chosen col: " + col);
+            //Console.WriteLine("Score: " + col);
 
         }
 
