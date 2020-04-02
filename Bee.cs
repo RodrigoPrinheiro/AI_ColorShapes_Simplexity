@@ -21,7 +21,6 @@ namespace BeeAI
         public override void Setup(string str)
         {
             base.Setup(str);
-            Random random = new Random();
             hashTable = new TranspositionTable(Cols, Rows);
             currentKey = 0;
         }
@@ -36,7 +35,7 @@ namespace BeeAI
             Console.WriteLine(currentKey);
             
             // Invoke minimax, starting with zero depth
-            (FutureMove move, float score) decision = ABNegamax(board, ct, board.Turn, 0, 2
+            (FutureMove move, float score) decision = ABNegamax(board, ct, board.Turn, 0, 3
             , -INFINITY, INFINITY, currentKey);
             
             Console.WriteLine(decision.move.column);
@@ -94,7 +93,6 @@ namespace BeeAI
 
             }
 
-<<<<<<< HEAD
 
             // Otherwise, if it's a final board, return the appropriate
             // evaluation
@@ -116,8 +114,6 @@ namespace BeeAI
                     return best = (FutureMove.NoMove, 0f);
                 }
             }
-=======
->>>>>>> 685e309c23ec9cbdb9e9ff26d4d34f51fb0df63a
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
             if (depth == maxDepth || (board.CheckWinner() != Winner.None))
