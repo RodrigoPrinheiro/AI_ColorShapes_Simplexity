@@ -19,7 +19,7 @@ namespace BeeAI
         private TranspositionTable hashTable;
         private ulong currentKey;
         private DateTime startTime, endTime;
-        private (FutureMove move, float score) previousDecision = default; 
+        private (FutureMove move, float score) previousDecision; 
         private bool DeepeningTimeIsUp
         {
             get
@@ -37,6 +37,7 @@ namespace BeeAI
             base.Setup(str);
             hashTable = new TranspositionTable(Cols, Rows);
             currentKey = 0;
+            previousDecision = default;
         }
 
         public override FutureMove Think(Board board, CancellationToken ct)

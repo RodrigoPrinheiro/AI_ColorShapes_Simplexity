@@ -43,15 +43,31 @@ namespace BeeAI
             // Max points the ai can hold
             float h = START_VALUE;
             bool enemyCheckFound = false;
+            Board boardCop = board.Copy();
+            int lasCol = boardCop.UndoMove().col;
 
             // Run through every win corridor
             foreach (IEnumerable<Pos> line in board.winCorridors)
             {
+                float Dist(float x1, float y1, float x2, float y2)
+                {
+                    return (float) Math.Sqrt(
+                        Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
+                }
+
                 // Set defaults
                 int allyPiecesInLine = 0;
                 int enemyPiecesInLine = 0;
                 bool canUseLine = true;
                 bool enemyCanUseLine = true;
+                // Distance between two points
+
+                // Determine the center row
+                float centerRow = board.rows / 2;
+                float centerCol = board.cols / 2;
+
+                // Maximum points a piece can be awarded when it's at the center
+                float maxPoints = Dist(centerRow, centerCol, 0, 0);
 
                 // Check every position on the win corridor
                 foreach (Pos pos in line)
@@ -75,6 +91,8 @@ namespace BeeAI
                         if (canUseLine)
                             allyPiecesInLine++;
 
+                        h += Dist(centerRow, centerCol, pos.row, pos.col);
+
                         enemyCanUseLine = false;
                     }
                     // The line is unusable
@@ -87,6 +105,8 @@ namespace BeeAI
                         {
                             enemyPiecesInLine++;
                         }
+
+                        h -= Dist(centerRow, centerCol, pos.row, pos.col)/2;
                     }
                 }
 
