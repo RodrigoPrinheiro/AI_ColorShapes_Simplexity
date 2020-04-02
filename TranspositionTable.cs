@@ -108,10 +108,11 @@ namespace BeeAI
         /// </returns>
         public ulong UpdateHash(int column, int row, PColor color, PShape shape, ulong oldKey)
         {
+            ulong newKey = 0;
             // Xor occupied locations in turn
-            oldKey ^= zobristKey[column * row][(int) shape][(int) color];
+            newKey = oldKey ^ zobristKey[column * row][(int) shape][(int) color];
             
-            return oldKey;
+            return newKey;
         }
 
         /// <summary>

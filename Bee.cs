@@ -32,7 +32,7 @@ namespace BeeAI
 
             Console.WriteLine(hashTable.Entries);
             
-            currentKey =  hashTable.HashBoard(board);
+            currentKey = hashTable.HashBoard(board);
             Console.WriteLine(currentKey);
             
             // Invoke minimax, starting with zero depth
@@ -42,14 +42,6 @@ namespace BeeAI
             Console.WriteLine(decision.move.column);
             // Return best move
             return decision.move;
-        }
-
-        private int GetLastRow(Board board, FutureMove decision)
-        {
-            int decisionRow = board.DoMove(decision.shape, decision.column);
-            // Undo the move
-            board.UndoMove();
-            return decisionRow;
         }
 
         // Minimax implementation
@@ -76,32 +68,36 @@ namespace BeeAI
             TableEntry nodeEntry;
             if (hashTable.GetEntry(nodeKey, out nodeEntry))
             {
-                if (nodeEntry.Depth >= depth)
+                if (!board.IsColumnFull(nodeEntry.Move.column))
                 {
-                    if (nodeEntry.Type == ScoreType.Accurate)
+                    if (nodeEntry.Depth >= depth)
                     {
-                        return nodeEntry.Value;
-                    }
-                    else if (nodeEntry.Type == ScoreType.Alpha)
-                    {
-                        alpha = Math.Max(alpha, nodeEntry.Score);
-                    }
-                    else if (nodeEntry.Type == ScoreType.Beta)
-                    {
-                        beta = Math.Min(beta, nodeEntry.Score);
-                    }
+                        if (nodeEntry.Type == ScoreType.Accurate)
+                        {
+                            return nodeEntry.Value;
+                        }
+                        else if (nodeEntry.Type == ScoreType.Alpha)
+                        {
+                            alpha = Math.Max(alpha, nodeEntry.Score);
+                        }
+                        else if (nodeEntry.Type == ScoreType.Beta)
+                        {
+                            beta = Math.Min(beta, nodeEntry.Score);
+                        }
 
-                    if (alpha >= beta)
-                    {
-                        return nodeEntry.Value;
+                        if (alpha >= beta)
+                        {
+                            return nodeEntry.Value;
+                        }
                     }
                 }
+
             }
 
 
             // Otherwise, if it's a final board, return the appropriate
             // evaluation
-            else if ((winner = board.CheckWinner()) != Winner.None)
+            if ((winner = board.CheckWinner()) != Winner.None)
             {
                 if (winner.ToPColor() == turn)
                 {
@@ -142,7 +138,7 @@ namespace BeeAI
                     int row;
                     // Order by the shape, play's the current turn shape first
                     // Get current shape
-                    PShape shape = (PShape) j == 0 ? turn.Shape() : turn.Other().Shape();
+                    PShape shape = (PShape) j;
                     // Use this variable to keep the current board's score
                     float eval;
                     ulong nextNodeKey = 0;
@@ -180,7 +176,7 @@ namespace BeeAI
                 }
             }
             
-            if (best.score != oldAlpha)
+            if (best.score <= oldAlpha)
                 nodeEntry.Type = ScoreType.Alpha;
             else
                 nodeEntry.Type = ScoreType.Accurate;
