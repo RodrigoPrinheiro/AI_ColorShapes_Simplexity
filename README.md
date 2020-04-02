@@ -9,7 +9,7 @@
   * ~~Negascout~~ (tried but failed)
 * [Tomás Franco](https://github.com/ThomasFranque) a21803301
   * Heuristic algorithm
-  * ~~Iterative deepening~~ (tried but failed)
+  * Iterative deepening
   * Negamax Implementation
 
 ## AI Description
