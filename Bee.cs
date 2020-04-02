@@ -142,7 +142,7 @@ namespace BeeAI
                     int row;
                     // Order by the shape, play's the current turn shape first
                     // Get current shape
-                    PShape shape = (PShape) j;
+                    PShape shape = (PShape) j == 0 ? turn.Shape() : turn.Other().Shape();
                     // Use this variable to keep the current board's score
                     float eval;
                     ulong nextNodeKey = 0;
@@ -180,12 +180,12 @@ namespace BeeAI
                 }
             }
             
-            nodeEntry.Score = best.score;
-            if (best.score <= oldAlpha)
+            if (best.score != oldAlpha)
                 nodeEntry.Type = ScoreType.Alpha;
             else
                 nodeEntry.Type = ScoreType.Accurate;
 
+            nodeEntry.Score = best.score;
             nodeEntry.Depth = depth;
             hashTable.StoreKey(nodeKey, nodeEntry);
             return best;
