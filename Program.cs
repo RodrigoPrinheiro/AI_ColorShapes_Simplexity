@@ -24,6 +24,7 @@ namespace BeeAI
             board.DoMove(PShape.Round, 5);
             board.DoMove(PShape.Square, 3);
 
+            TranspositionTable table = new TranspositionTable(board.cols, board.rows);
             // board.DoMove(PShape.Round, 6);
             // board.DoMove(PShape.Square, 5);
             // board.DoMove(PShape.Round, 4);
@@ -31,7 +32,8 @@ namespace BeeAI
             // board.DoMove(PShape.Square, 2);
 
             BoardUpdate(board);
-
+            Console.WriteLine(table.HashBoard(board));
+            Console.WriteLine(table.HashBoard(board));
             Console.WriteLine(board.Turn);
             Console.WriteLine(BeeHeuristics.Honeycomb(board, board.Turn));
 

@@ -30,14 +30,16 @@ namespace BeeAI
         {
             iterations = 0;
 
-            //Console.WriteLine(hashTable.Entries);
+            Console.WriteLine(hashTable.Entries);
             
             currentKey =  hashTable.HashBoard(board);
+            Console.WriteLine(currentKey);
             
             // Invoke minimax, starting with zero depth
-            (FutureMove move, float score) decision = ABNegamax(board, ct, board.Turn, 0, 5
+            (FutureMove move, float score) decision = ABNegamax(board, ct, board.Turn, 0, 2
             , -INFINITY, INFINITY, currentKey);
             
+            Console.WriteLine(decision.move.column);
             // Return best move
             return decision.move;
         }
@@ -140,7 +142,7 @@ namespace BeeAI
                     int row;
                     // Order by the shape, play's the current turn shape first
                     // Get current shape
-                    PShape shape = (PShape) j == 0 ? turn.Shape() : turn.Other().Shape();
+                    PShape shape = (PShape) j;
                     // Use this variable to keep the current board's score
                     float eval;
                     ulong nextNodeKey = 0;
