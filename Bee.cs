@@ -54,8 +54,7 @@ namespace BeeAI
             for (int maxDepth = 2; 0 < 1; maxDepth++)
             {
                 // Invoke minimax, starting with zero depth
-                tempdecision = ABNegamax(board, ct, board.Turn, 0, maxDepth,
-                                 -INFINITY, INFINITY, currentKey);
+                tempdecision = ABNegamax(board, ct, board.Turn, 0, maxDepth, 0, currentKey);
 
                 if (DeepeningTimeIsUp)
                 {
@@ -71,15 +70,14 @@ namespace BeeAI
 
         // Minimax implementation
         private(FutureMove move, float score) ABNegamax(
-            Board board, CancellationToken ct, PColor turn, int depth, int maxDepth,
-            float alpha, float beta, ulong nodeKey)
+            Board board, CancellationToken ct, PColor turn, int depth, int maxDepth, 
+                float gamma, ulong nodeKey)
         {
             iterations++;
             // Move to return and its heuristic value
             (FutureMove move, float score) best;
             // Current board state
             Winner winner;
-            float oldAlpha = alpha;
             
             // If a cancellation request was made...
             if (ct.IsCancellationRequested)
@@ -97,30 +95,24 @@ namespace BeeAI
             TableEntry nodeEntry;
             if (hashTable.GetEntry(nodeKey, out nodeEntry))
             {
-                if (!board.IsColumnFull(nodeEntry.Move.column))
+                if (nodeEntry.Depth > maxDepth - depth)
                 {
-                    if (nodeEntry.Depth >= depth)
+                    if (nodeEntry.MinScore > gamma)
                     {
-                        if (nodeEntry.Type == ScoreType.Accurate)
-                        {
-                            return nodeEntry.Value;
-                        }
-                        else if (nodeEntry.Type == ScoreType.Alpha)
-                        {
-                            alpha = Math.Max(alpha, nodeEntry.Score);
-                        }
-                        else if (nodeEntry.Type == ScoreType.Beta)
-                        {
-                            beta = Math.Min(beta, nodeEntry.Score);
-                        }
-
-                        if (alpha >= beta)
-                        {
-                            return nodeEntry.Value;
-                        }
+                        return (nodeEntry.Move, nodeEntry.MinScore);
                     }
-                }
+                    else if (nodeEntry.MaxScore < gamma)
+                    {
+                        return (nodeEntry.Move, nodeEntry.MaxScore);
+                    }
+                    else
+                    {
+                        nodeEntry.Depth = maxDepth - depth;
+                        nodeEntry.MinScore = -INFINITY;
+                        nodeEntry.MaxScore = INFINITY;
+                    }
 
+                }
             }
 
             // Otherwise, if it's a final board, return the appropriate
@@ -129,16 +121,22 @@ namespace BeeAI
             {
                 if (winner.ToPColor() == turn)
                 {
+                    nodeEntry.MinScore = nodeEntry.MaxScore = INFINITY;
+                    hashTable.StoreKey(nodeKey, nodeEntry);
                     // AI player wins, return highest possible score
                     return best = (FutureMove.NoMove, INFINITY);
                 }
                 else if (winner.ToPColor() == turn.Other())
                 {
+                    nodeEntry.MinScore = nodeEntry.MaxScore = -INFINITY;
+                    hashTable.StoreKey(nodeKey, nodeEntry);
                     // Opponent wins, return lowest possible score
                     return best = (FutureMove.NoMove, -INFINITY);
                 }
                 else
                 {
+                    nodeEntry.MinScore = nodeEntry.MaxScore = 0;
+                    hashTable.StoreKey(nodeKey, nodeEntry);
                     // A draw, return zero
                     return best = (FutureMove.NoMove, 0f);
                 }
@@ -147,7 +145,9 @@ namespace BeeAI
             // the heuristic
             if (depth == maxDepth)
             {
-                return best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
+                nodeEntry.MinScore = nodeEntry.MaxScore = BeeHeuristics.Honeycomb(board, turn);
+                    hashTable.StoreKey(nodeKey, nodeEntry);
+                return best = (FutureMove.NoMove, nodeEntry.MinScore);
             }
 
             // Initialize the selected move...
@@ -181,38 +181,23 @@ namespace BeeAI
 
                     // Get score and witch the sign
                     eval = -ABNegamax(board, ct, turn.Other(), depth + 1, maxDepth,
-                         -beta, -Math.Max(alpha, best.score), nextNodeKey).score;
+                        -gamma, nextNodeKey).score;
                     board.UndoMove();
 
                     if (eval > best.score)
                     {
                         best.score = eval;
                         best.move = new FutureMove(i, shape);
-
-                        // Beta pruning the branch
-                        if (best.score >= beta)
-                        {
-                            // Assign the done entry values
-                            nodeEntry.Score = best.score;
-                            nodeEntry.Type = ScoreType.Beta;
-                            nodeEntry.Depth = depth;
-                            nodeEntry.Move = best.move;
-                            // Store move in hastable
-                            hashTable.StoreKey(nodeKey, nodeEntry);
-                            // Return the best value of this pruning
-                            return best;
-                        }
+                        nodeEntry.Move = best.move;
                     }
                 }
             }
             
-            if (best.score <= oldAlpha)
-                nodeEntry.Type = ScoreType.Alpha;
+            if (best.score < gamma)
+                nodeEntry.MaxScore = best.score;
             else
-                nodeEntry.Type = ScoreType.Accurate;
+                nodeEntry.MinScore = best.score;
 
-            nodeEntry.Score = best.score;
-            nodeEntry.Depth = depth;
             hashTable.StoreKey(nodeKey, nodeEntry);
             return best;
         }

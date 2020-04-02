@@ -14,12 +14,10 @@ namespace BeeAI
 
     public struct TableEntry
     {
-        public ScoreType Type {get; set;}
-        public float Score {get; set;}
+        public float MaxScore {get; set;}
+        public float MinScore {get; set;}
         public FutureMove Move{get; set;}
         public int Depth{get; set;}
-
-        public (FutureMove move, float score) Value => (Move, Score);
 
     }
 }
