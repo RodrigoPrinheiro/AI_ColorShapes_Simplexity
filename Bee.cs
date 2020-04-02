@@ -14,12 +14,12 @@ namespace BeeAI
         /// <summary>
         /// Debug variable to see how many iterations the AI did.
         /// </summary>        
+        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.15f;
         private int iterations;
         private TranspositionTable hashTable;
         private ulong currentKey;
-        DateTime startTime, endTime;
-
-        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.15f;
+        private DateTime startTime, endTime;
+        private (FutureMove move, float score) previousDecision = default; 
         private bool DeepeningTimeIsUp
         {
             get
@@ -46,15 +46,16 @@ namespace BeeAI
             iterations = 0;
 
             currentKey = hashTable.HashBoard(board);
+            Console.WriteLine(hashTable.Entries);
 
             (FutureMove move, float score) finalDecision = default;
-            (FutureMove move, float score) previousDecision = default;
             (FutureMove move, float score) tempdecision = default;
 
-            for (int maxDepth = 2; 0 < 1; maxDepth += 2)
+            for (int maxDepth = 2; 0 < 1; maxDepth++)
             {
                 // Invoke minimax, starting with zero depth
-                tempdecision = ABNegamax(board, ct, board.Turn, 0, maxDepth, -INFINITY, INFINITY, currentKey);
+                tempdecision = ABNegamax(board, ct, board.Turn, 0, maxDepth,
+                                 -INFINITY, INFINITY, currentKey);
 
                 if (DeepeningTimeIsUp)
                 {
@@ -79,12 +80,7 @@ namespace BeeAI
             // Current board state
             Winner winner;
             float oldAlpha = alpha;
-
-            if (DeepeningTimeIsUp)
-            {
-                return best = (FutureMove.NoMove, float.NaN);
-            }
-
+            
             // If a cancellation request was made...
             if (ct.IsCancellationRequested)
             {
@@ -93,7 +89,11 @@ namespace BeeAI
                 return best = (FutureMove.NoMove, -INFINITY);
             }
 
-            // Check if there is an entry in the hash table
+            if (DeepeningTimeIsUp)
+            {
+                return previousDecision;
+            }
+
             TableEntry nodeEntry;
             if (hashTable.GetEntry(nodeKey, out nodeEntry))
             {
@@ -123,7 +123,6 @@ namespace BeeAI
 
             }
 
-
             // Otherwise, if it's a final board, return the appropriate
             // evaluation
             if ((winner = board.CheckWinner()) != Winner.None)
@@ -146,7 +145,7 @@ namespace BeeAI
             }
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
-            if (depth == maxDepth || (winner = board.CheckWinner()) != Winner.None)
+            if (depth == maxDepth)
             {
                 return best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
@@ -179,8 +178,10 @@ namespace BeeAI
                     // Test move, call minimax and undo move
                     // Update hash key for next Negamax node
                     nextNodeKey = hashTable.UpdateHash(i, row, turn, shape, nodeKey);
+
                     // Get score and witch the sign
-                    eval = -ABNegamax(board, ct, turn.Other(), depth + 1, maxDepth, -beta, -Math.Max(alpha, best.score), nextNodeKey).score;
+                    eval = -ABNegamax(board, ct, turn.Other(), depth + 1, maxDepth,
+                         -beta, -Math.Max(alpha, best.score), nextNodeKey).score;
                     board.UndoMove();
 
                     if (eval > best.score)

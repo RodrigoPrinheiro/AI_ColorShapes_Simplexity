@@ -87,7 +87,7 @@ namespace BeeAI
                     
                     // Xor the result with the key using the board position,
                     // color and shape.
-                    result ^= zobristKey[j * cols + i]
+                    result ^= zobristKey[j * rows + i]
                         [(int) piece.Value.shape][(int) piece.Value.color];
                 }
             }
