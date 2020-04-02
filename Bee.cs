@@ -98,30 +98,9 @@ namespace BeeAI
                 }
             }
 
-
-            // Otherwise, if it's a final board, return the appropriate
-            // evaluation
-            else if ((winner = board.CheckWinner()) != Winner.None)
-            {
-                if (winner.ToPColor() == turn)
-                {
-                    // AI player wins, return highest possible score
-                    return best = (FutureMove.NoMove, INFINITY);
-                }
-                else if (winner.ToPColor() == turn.Other())
-                {
-                    // Opponent wins, return lowest possible score
-                    return best = (FutureMove.NoMove, -INFINITY);
-                }
-                else
-                {
-                    // A draw, return zero
-                    return best = (FutureMove.NoMove, 0f);
-                }
-            }
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
-            else if (depth == maxDepth)
+            if (depth == maxDepth || (board.CheckWinner() != Winner.None))
             {
                 return best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
