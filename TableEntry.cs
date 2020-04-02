@@ -8,15 +8,18 @@ namespace BeeAI
     public enum ScoreType
     {
         Accurate,
-        AlphaPruned,
-        BetaPruned,
+        Alpha,
+        Beta,
     }
 
     public struct TableEntry
     {
-        private ScoreType scoreType;
-        private float score;
-        private FutureMove move;
-        private int depth;
+        public ScoreType Type {get; set;}
+        public float Score {get; set;}
+        public FutureMove Move{get; set;}
+        public int Depth{get; set;}
+
+        public (FutureMove move, float score) Value => (Move, Score);
+
     }
 }
