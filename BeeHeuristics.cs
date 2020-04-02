@@ -109,47 +109,5 @@ namespace BeeAI
             return enemyCheckFound ? float.NegativeInfinity : h;
         }
 
-        private static float NeighborsValue(int x, int y, PColor color, Board board)
-        {
-            int minX = Math.Max(x - 1, 0);
-            int maxX = Math.Max(x + 1, board.cols);
-            int minY = Math.Max(y - 1, 0);
-            int maxY = Math.Max(y - 1, board.rows);
-
-            float pieceHeuristic = 0;
-
-            for (int i = minY; i < maxY; i++)
-            {
-                for (int j = minX; j < maxX; j++)
-                {
-
-                    if (!board[i, j].HasValue || (i == y && j == x)) continue;
-                    Piece p = board[i, j].Value;
-
-                    // If the piece curresponds to the player
-                    if (p.color == color && p.shape == color.Shape())
-                    {
-                        pieceHeuristic += AMOUNT_PIECE;
-                    }
-                    else if (p.color != color && p.shape != color.Shape())
-                    {
-                        pieceHeuristic -= AMOUNT_PIECE;
-                    }
-                    // If the piece has only the same color
-                    else if (p.color == color && p.shape != color.Shape())
-                    {
-                        pieceHeuristic += AMOUNT_COLOR;
-                        pieceHeuristic -= AMOUNT_SHAPE;
-                    }
-                    else if (p.color != color && p.shape == color.Shape())
-                    {
-                        pieceHeuristic -= AMOUNT_COLOR;
-                        pieceHeuristic += AMOUNT_SHAPE;
-                    }
-                }
-            }
-
-            return pieceHeuristic;
-        }
     }
 }
