@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 using ColorShapeLinks.Common;
 using ColorShapeLinks.Common.AI;
@@ -18,6 +17,21 @@ namespace BeeAI
         private int iterations;
         private TranspositionTable hashTable;
         private ulong currentKey;
+        DateTime startTime, endTime;
+
+        private const float TIMER_WIGGLE_ROOM_FACTOR = 0.15f;
+        private bool DeepeningTimeIsUp
+        {
+            get
+            {
+                double elapsedTime =
+                    ((TimeSpan) (DateTime.Now - startTime)).TotalMilliseconds;
+
+                return elapsedTime >
+                    TimeLimitMillis - TimeLimitMillis * TIMER_WIGGLE_ROOM_FACTOR;
+            }
+        }
+
         public override void Setup(string str)
         {
             base.Setup(str);
@@ -27,20 +41,31 @@ namespace BeeAI
 
         public override FutureMove Think(Board board, CancellationToken ct)
         {
+            startTime = DateTime.Now;
+
             iterations = 0;
 
-            Console.WriteLine(hashTable.Entries);
-            
             currentKey = hashTable.HashBoard(board);
-            Console.WriteLine(currentKey);
-            
-            // Invoke minimax, starting with zero depth
-            (FutureMove move, float score) decision = ABNegamax(board, ct, board.Turn, 0, 3
-            , -INFINITY, INFINITY, currentKey);
-            
-            Console.WriteLine(decision.move.column);
+
+            (FutureMove move, float score) finalDecision = default;
+            (FutureMove move, float score) previousDecision = default;
+            (FutureMove move, float score) tempdecision = default;
+
+            for (int maxDepth = 2; 0 < 1; maxDepth += 2)
+            {
+                // Invoke minimax, starting with zero depth
+                tempdecision = ABNegamax(board, ct, board.Turn, 0, maxDepth, -INFINITY, INFINITY, currentKey);
+
+                if (DeepeningTimeIsUp)
+                {
+                    finalDecision = previousDecision;
+                    break;
+                }
+
+                previousDecision = tempdecision;
+            }
             // Return best move
-            return decision.move;
+            return finalDecision.move;
         }
 
         // Minimax implementation
@@ -55,12 +80,17 @@ namespace BeeAI
             Winner winner;
             float oldAlpha = alpha;
 
+            if (DeepeningTimeIsUp)
+            {
+                return best = (FutureMove.NoMove, float.NaN);
+            }
+
             // If a cancellation request was made...
             if (ct.IsCancellationRequested)
             {
                 // ...set a "no move" and skip the remaining part of
                 // the algorithm
-                return best = (FutureMove.NoMove, 0);
+                return best = (FutureMove.NoMove, -INFINITY);
             }
 
             // Check if there is an entry in the hash table
@@ -116,7 +146,7 @@ namespace BeeAI
             }
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
-            if (depth == maxDepth || (board.CheckWinner() != Winner.None))
+            if (depth == maxDepth || (winner = board.CheckWinner()) != Winner.None)
             {
                 return best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
@@ -144,13 +174,13 @@ namespace BeeAI
                     // Skip unavailable shapes
                     if (board.PieceCount(turn, shape) == 0) continue;
 
-                    // Test move, call minimax and undo move
                     row = board.DoMove(shape, i);
+
+                    // Test move, call minimax and undo move
                     // Update hash key for next Negamax node
                     nextNodeKey = hashTable.UpdateHash(i, row, turn, shape, nodeKey);
                     // Get score and witch the sign
-                    eval = -ABNegamax(board, ct, turn.Other(), depth + 1, maxDepth,
-                         -beta, -Math.Max(alpha, best.score), nextNodeKey).score;
+                    eval = -ABNegamax(board, ct, turn.Other(), depth + 1, maxDepth, -beta, -Math.Max(alpha, best.score), nextNodeKey).score;
                     board.UndoMove();
 
                     if (eval > best.score)
@@ -170,7 +200,7 @@ namespace BeeAI
                             hashTable.StoreKey(nodeKey, nodeEntry);
                             // Return the best value of this pruning
                             return best;
-                        } 
+                        }
                     }
                 }
             }
