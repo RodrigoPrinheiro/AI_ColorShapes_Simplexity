@@ -94,6 +94,7 @@ namespace BeeAI
 
             }
 
+<<<<<<< HEAD
 
             // Otherwise, if it's a final board, return the appropriate
             // evaluation
@@ -115,9 +116,11 @@ namespace BeeAI
                     return best = (FutureMove.NoMove, 0f);
                 }
             }
+=======
+>>>>>>> 685e309c23ec9cbdb9e9ff26d4d34f51fb0df63a
             // If we're at maximum depth and don't have a final board, use
             // the heuristic
-            else if (depth == maxDepth)
+            if (depth == maxDepth || (board.CheckWinner() != Winner.None))
             {
                 return best = (FutureMove.NoMove, BeeHeuristics.Honeycomb(board, turn));
             }
